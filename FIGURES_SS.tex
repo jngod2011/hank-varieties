@@ -1,0 +1,238 @@
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\usepackage{float}
+\usepackage{amsmath}
+
+\usepackage[authoryear]{natbib}
+\usepackage{forloop}
+\usepackage{arrayjob}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{babel}
+\usepackage{multicol}
+\makeatletter
+\makeatother
+
+% TITLES OF FIGURES
+\captionsetup[subfloat]{textfont=bf,labelformat=empty,position=top}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{SectionTitle.tex}
+
+\begin{table}[H]
+	\centering
+	\caption{Properties of computation}
+	\input{HeadingsTable.tex}
+\end{table}
+
+%_____________________________________________________________
+%\newpage
+\section{Stats by income group}
+
+\begin{multicols}{2}
+
+\begin{figure}[H]
+\protect\caption{Stats by income group}
+\centering{}
+\includegraphics[width=15cm]{stats_by_inc}
+\end{figure}
+
+\end{multicols}
+%_____________________________________________________________
+\newpage
+\section{Wealth distribution}
+
+%\begin{multicols}{2}
+
+\begin{figure}[H]
+\protect\caption{Overall liquid wealth distribution}
+\centering{}
+\includegraphics[width=10cm]{liq_dist}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Overall illiquid wealth distribution}
+\centering{}
+\includegraphics[width=10cm]{ill_dist}
+\end{figure}
+
+%\end{multicols}
+
+%_____________________________________________________________
+\newpage
+\section{MPC and rebate response distributions}
+
+\begin{multicols}{2}
+
+\begin{figure}[H]
+\protect\caption{Overall theoretical mpc distribution}
+\centering{}
+\includegraphics[width=7cm]{mpc_theoretical_dist}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Overall one quarter mpc distribution}
+\centering{}
+\includegraphics[width=7cm]{mpc_quarterly_dist}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Overall annual mpc distribution}
+\centering{}
+\includegraphics[width=7cm]{mpc_annual_dist}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Overall one quarter \$500 rebate distribution}
+\centering{}
+\includegraphics[width=7cm]{mpc500_quarterly_dist}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Overall one quarter \$2500 rebate distribution}
+\centering{}
+\includegraphics[width=7cm]{mpc2500_quarterly_dist}
+\end{figure}
+
+\end{multicols}
+%_____________________________________________________________
+\newpage
+\section{3D MPC distributions}
+
+\begin{multicols}{2}
+
+\begin{figure}[H]
+\protect\caption{Theoretical distribution}
+\centering{}
+\includegraphics[width=7cm]{mpc_theoretical_function}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{One quarter MPCs}
+\centering{}
+\includegraphics[width=7cm]{mpc_quarterly_function}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Annual MPCs}
+\centering{}
+\includegraphics[width=7cm]{mpc_annual_function}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Illiquid Deposit Distribution}
+\centering{}
+\includegraphics[width=7cm]{deposit_dist}
+\end{figure}
+
+\end{multicols}
+
+%_____________________________________________________________
+\newpage
+\section{Policy functions}
+
+\begin{multicols}{2}
+
+\begin{figure}[H]
+\protect\caption{Consumption Policy (Illiquid)}
+\centering{}
+\includegraphics[width=7cm]{con_ill_policy}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Consumption Policy (Liquid)}
+\centering{}
+\includegraphics[width=7cm]{con_liq_policy}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Deposit Policy (Illiquid)}
+\centering{}
+\includegraphics[width=7cm]{dep_ill_policy}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Deposit Policy (Liquid)}
+\centering{}
+\includegraphics[width=7cm]{dep_liq_policy}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Value Function (Illiquid)}
+\centering{}
+\includegraphics[width=7cm]{val_ill_policy}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Value Function (Liquid)}
+\centering{}
+\includegraphics[width=7cm]{val_liq_policy}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Liquid Savings Policy (Illiquid)}
+\centering{}
+\includegraphics[width=7cm]{sav_ill_policy}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Liquid  Savings Policy (Liquid)}
+\centering{}
+\includegraphics[width=7cm]{sav_liq_policy}
+\end{figure}
+
+\end{multicols}
+%_____________________________________________________________
+\newpage
+\section{3D policy functions}
+
+%\begin{multicols}{2}
+
+\begin{figure}[H]
+\protect\caption{Consumption Policy (3D)}
+\centering{}
+\includegraphics[width=10cm]{con_policy_3D}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{Deposit Policy (3D)}
+\centering{}
+\includegraphics[width=10cm]{dep_policy_3D}
+\end{figure}
+
+%\end{multicols}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TEMPLATE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%_____________________________________________________________
+\newpage
+\section{}
+
+\begin{multicols}{2}
+
+\begin{figure}[H]
+\protect\caption{}
+\centering{}
+\includegraphics[width=7cm]{}
+\end{figure}
+
+\begin{figure}[H]
+\protect\caption{}
+\centering{}
+\includegraphics[width=7cm]{}
+\end{figure}
+
+\end{multicols}

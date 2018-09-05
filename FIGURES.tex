@@ -1,0 +1,41 @@
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\usepackage{float}
+\usepackage{amsmath}
+
+\usepackage[authoryear]{natbib}
+\usepackage{forloop}
+\usepackage{arrayjob}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{babel}
+\usepackage{multicol}
+\makeatletter
+\makeatother
+
+% TITLES OF FIGURES
+\captionsetup[subfloat]{textfont=bf,labelformat=empty,position=top}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{SectionTitle.tex}
+
+\begin{table}[H]
+	\centering
+	\caption{Properties of computation}
+	\input{HeadingsTable.tex}
+\end{table}
+
+\begin{multicols}{2}
+% Plot all figures
+\input{Plots.tex}
+\end{multicols}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}

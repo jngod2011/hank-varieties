@@ -1,0 +1,33 @@
+MODULE Parameters
+IMPLICIT NONE
+SAVE
+
+!OPTIONS
+integer,parameter  ::  TwoPointWageProcess 		= 0	!set ngpy=2
+integer,parameter  ::  Borrowing				= 1
+
+!GRID SIZES
+integer,parameter :: ngpa		= 40		    !grid for illiquid assets
+integer,parameter :: ngpbPOS	= 40		    !grid for liquid assets, >=0 range
+integer,parameter :: ngpbNEG	= 10		    !grid for liquid assets, <0 range only active if Borrowing==1
+integer,parameter :: ngpb		= ngpbPOS + Borrowing*ngpbNEG
+integer,parameter :: ngpy		= 33
+integer,parameter :: naby		= ngpa*ngpb*ngpy
+integer,parameter :: nab		= ngpa*ngpb
+
+!PARAMETERS FOR GRID CONSTRUCTION
+real(8), parameter   :: agridparam = 0.15		!for a: approaches linear as goes to 1, approaches L shaped as goes to 0
+real(8), parameter   :: bgridparam = 0.35		!for b pos: approaches linear as goes to 1, approaches L shaped as goes to 0
+real(8), parameter   :: bgridparamNEG = 0.4		!for b neg: approaches linear as goes to 1, approaches L shaped as goes to 0
+real(8), parameter   :: amax  = 5000.0			!multiple of average gross quarterly labor income
+real(8), parameter   :: bmax  = 100.0
+
+!OTHER PARAMETERS
+real(8), parameter 	 :: cmin = 1.0e-5	!minimum consumption for natural borrowing limit
+real(8), parameter 	 :: facc = 1.0e-10 !1.0e-6
+
+integer, parameter   :: Ttransition = 200 !no. time steps for the transition (each step is can be a different number of time units)
+integer, parameter 	 :: nfs = 0 !2 !number of fiscal stimulus defined experiments
+
+
+END MODULE Parameters
