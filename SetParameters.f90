@@ -10,15 +10,12 @@ INTEGER 	:: iy
 REAL 		:: la,lb,lc
 
 !OUTPUT DIR
-OutputDir =			"/Volumes/FILES/Large/JEPShocks/test/"
+OutputDir =			"/Volumes/FILES/Large/HANKVarieties/test/"
 ! OutputDir ="Output/"
 EarningsProcessDir	= "/Volumes/FILES/Git/hank-main/earnings_input/2point_3_11"
 ! EarningsProcessDir	= "/home/gkaplan/git/hank-main/earnings_input/2point_3_11"
 
 !INPUT / OUTPUT DIR FOR FED IN PRICES
-!FeedPriceDir = "/Volumes/FILES/Dropbox/Projects/JEPMacroHeterogeneity/HANK_shocks/irf8nov_T/price_files/flex/TFP"
-! FeedPriceDir = "/Volumes/FILES/Dropbox/Projects/JEPMacroHeterogeneity/Felipe/irf09nov/elast/shock_Gexp/price_files/sticky"
-
 FeedPriceFile = "/Volumes/FILES/Dropbox/Projects/JEPMacroHeterogeneity/HANK_shocks/FeedPriceDirectories.txt" !file with paths on separate lines
 ! FeedPriceFile = "/Volumes/FILES/Dropbox/Projects/JEPMacroHeterogeneity/HANK_shocks/FeedPriceDirectoriesHANK.txt" !file with paths on separate lines
 nfeed = 57
@@ -36,16 +33,15 @@ ReportNonMonotonicity   	= 0
 CalibrateDiscountRate	= 0
 EquilibriumR		 	= 1
 ComputeCumulativeMPC 	= 0
-DoImpulseResponses 		= 1
+DoImpulseResponses 		= 0
 DoFeedInPrices 			= 0
 SaveTransitionPolicyFns = 0	!warning: will create a very large number of text files 
 SaveTime1PolicyFns 		= 0
 SaveCumPolicyFnsIRF 	= 0
 ComputeDiscountedMPC 	= 0
-RepAgentModel 			= 0
  
 !labor risk options
-ReadEarningsProcess = 1
+ReadEarningsProcess = 0
 NoLaborSupply		= 0	!only one of the labor supply options
 LaborSupplySep		= 1	
 LaborSupplyGHH 		= 0
@@ -77,8 +73,8 @@ PinKappa1ByKappa02 		= 1!0 !imposes that coefficient on convex term is equal to 
 
 !transition computation options
 PermanentShock 				= 0
-SolveFlexPriceTransition	= 1
-SolveStickyPriceTransition	= 1
+SolveFlexPriceTransition	= 0
+SolveStickyPriceTransition	= 0
 SolveZLBTransition			= 0
 ConvergenceRelToOutput 		= 1
 UpdateFlexUsingBond 		= 0
@@ -91,19 +87,18 @@ bondelastrelgdp 			= 1.0 !1.0 !bigger for smaller interest rate movements (large
 bondadjust 					= 0.1 !more responsive interest rate on impact when closer to zero
 FixBorrowRateTransition 	= 1
 
-!dividend options
-FixProfitsOutOfSteadyState 		= 0
-DividendFundLumpSum 			= 1 !0
-DistributeProfitsInProportion 	= 1 !distributes profdistfrac of profits as dividends, and (1-profdistfrac) to households in proportion to productivity
-profdistfrac 					= 0.33 !set to alpha to neutralize effect of profits on redistribution between liquid and illiquid assets
-TaxHHProfitIncome 				= 1 !taxes profit income at labor tax rate if DistributeProfitsInProportion = 1
+!profit distribution options: fractions must sum to 1.0
+TaxHHProfitIncome	= 1 !taxes labor subsidy component of profit income at labor tax rate
+profdistfracA		= 1.0	!fraction of profits to illiquid equity (set to alpha)
+profdistfracB		= 0.0	!fraction of profits to liquid equity
+profdistfracW		= 0.0 !0.67	!fraction of profits to labor subsidy (set to 1-alpha)
+profdistfracL 		= 0.0 !0.0 	!fraction of profits lump-sum to households
 
 
 !government bc options
 AdjGovBudgetConstraint 		= 3 !1 for adjust spending, 2 for adjust lump sum taxes, 3 for let debt adjust (choose options below for financing), 4 for adjust proportional tax
 GovExpConstantFracOutput 	= 0 !only active if AdjGovBudgetConstraint==3
 fixnomgovdebt 				= 0.0 !0 for fixed real government debt, 1 for for fixed nominal government debt, or in between
-RebateCorpTaxLumpSum        = 0 !1: rebates changes corp prof outside SS as lump sum taxes regardless of AdjGovBudgetConstraint, 2: rebates only (1-labtax) of these back
 taxincrstart 		= 0.0 !1.0 !quarters after shock that fiscal policy adjusts
 taxincrdecay 		= 0.02 !0.1 !decay rate for tax increase higher for faster decay
 GovBCFDScheme 		= 2 !1 for old, 2 for new. 2 requires taxincrstart = 0.0, ony affects B adjusts
@@ -247,7 +242,7 @@ deltakfe 		= 1.0e6 !1.0 !1.0e4
 dVamin 			= 1.0e-8 !0.0
 dVbmin 			= 1.0e-8
 
-tolequmss		= 1.0e-10
+tolequmss		= 1.0e-6
 stepequmss		= 0.05
 maxiterequmss	= 40 !20
 maxiterrho 		= 50 !30 !50
@@ -269,8 +264,7 @@ stepstickytransB  = 0.001 !0.001 !0.00005
 deltacumcon = 0.01 !deltatransmin !set to a low number like 0.01 for accurate steady state MPCs, and to deltratransmin for IRF consistency
 
 !discount rates
-rho		=  0.01272892513 !0.01272892513(baseline)
-! rho  	= 0.0114118698626
+rho		=  0.0125
 
 !preferences
 deathrate	= 1.0/(4.0*45.0) !poisson death rate
@@ -338,25 +332,31 @@ pricelev = 1.0 	!steady stat price level if zero inflation
 rnom = rb + pi		!nominal interest rate (fisher equation): this will be constant in taylor rule
 mpshock 	= 0.0		!shock to nominal interest rate in taylor rule
 
-tfp 	= 1.0
 elast 	= 10.0 !elasticity of DS aggregator
 gap 	= 0.0 !steady state output gap
 mc = (elast-1.0)/elast
 
-alpha 		= 0.33
-alphatilde 	= (alpha**alpha) * ((1.0-alpha)**(1.0-alpha))
+!production parameters
+drs_Y 		= 0.6
+alpha_Y		= 0.33
+tfp_Y 		= 1.0
+alphatilde_Y 	= (alpha_Y**alpha_Y) * ((1.0-alpha_Y)**(1.0-alpha_Y))
+
+drs_N 		= 0.95
+alpha_N		= 0.33
+tfp_N 		= 1.0
+alphatilde_N 	= (alpha_N**alpha_N) * ((1.0-alpha_N)**(1.0-alpha_N))
+
 deprec 		= 0.07/4.0 !depreciation rate
 
-fundlev 	= 0.0
 utilelast 	= 0.0
 utilelastalpha  = 1.0 + utilelast-alpha*utilelast
 
 !government
 labtax 			= 0.30
-lumptransferpc 	= 40000*labtax/(115000.0*2.92*4.0)
-! lumptransfer = 0.10
+lumptransferpc 	= 0.01 !40000*labtax/(115000.0*2.92*4.0)
 corptax 		= 0.0
-ssdebttogdp 	= 0.26*4 !if foreign sector assumed to hold residual bonds
+ssdebttogdp 	= 0.26*4 !if foreign sector assumed to hold residual bonds or if equilibrium in liquid assets
 govshock 		= 1.0
 transfershock 	= 1.0
 
@@ -373,22 +373,21 @@ targetFracIll0Liq0 	= 0.10 !0.12 !0.115
 
 lumptransfer = lumptransferpc*targetMeanIll
 
-
-IF (DividendFundLumpSum ==0) THEN
-	targetKYratio 	= targetMeanIll/(1.0 - fundlev)
-
-ELSE IF (DividendFundLumpSum ==1) THEN
-	
-	la = -(deprec+rb*fundlev) 
-	IF(DistributeProfitsInProportion==0) lb = ((elast-1.0)/elast)*alpha + (1.0/(1.0-fundlev))*targetMeanIll*(deprec+rb*fundlev) + (1.0/elast)*(1.0-corptax)
-	IF(DistributeProfitsInProportion==1) lb = ((elast-1.0)/elast)*alpha + (1.0/(1.0-fundlev))*targetMeanIll*(deprec+rb*fundlev) + (1.0/elast)*(1.0-corptax)*profdistfrac
-	lc = -(1.0/(1.0-fundlev)) * targetMeanIll *((elast-1)/elast) *alpha
-	
-	targetKYratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
-END IF
+!compute targetKY ratio
+la = -deprec 
+lb = targetMeanIll*deprec + (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N + ((1.0-1.0/elast)*(1.0-drs_Y) + (1.0/elast)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
+lc = - targetMeanIll* ( (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N
+target_K_totoutput_ratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
 
 !if solving for equilibrium, these are guesses
+
+cap_output = target_cap_output
+
+
 KYratio = targetKYratio 
+
+
+
 KNratio = (tfp*KYratio)**(1.0/(1.0-alpha))
 rcapital = mc*alpha/KYratio
 wage = mc*(1.0-alpha)*tfp*(KNratio**alpha)
@@ -397,16 +396,17 @@ IF(DividendFundLumpSum==1) divrate = 0.0
 IF(DividendFundLumpSum==0) divrate =  (1.0-corptax)*(1.0-mc)/KYratio !outside of steady state include price adjustments
 IF(DistributeProfitsInProportion==1) divrate =  profdistfrac*divrate
 
-ra = (rcapital - deprec + divrate - fundlev*rb)/(1.0-fundlev)
+ra = rcapital - deprec
 
-IF(NoLaborSupply==1) THEN
-	!scale efficiency units so that output euqals 1
-	meanlabeff = KYratio**(alpha/(alpha-1))
-ELSE
-	!scale efficiency units so that average hours would be 1/3 in eqm if cov(z,h)=0
-	meanlabeff = (KYratio/KNratio)/(1.0/3.0)
-END IF		
+! IF(NoLaborSupply==1) THEN
+! 	!scale efficiency units so that output euqals 1
+! 	meanlabeff = KYratio**(alpha/(alpha-1))
+! ELSE
+! 	!scale efficiency units so that average hours would be 1/3 in eqm if cov(z,h)=0
+! 	meanlabeff = (KYratio/KNratio)/(1.0/3.0)
+! END IF
 
+meanlabeff = 1.0
 frisch 		= 1.0 	!frisch elasticity labor supply
 
 IF(OneAssetNoCapital==1) THEN 
@@ -430,17 +430,13 @@ IF (LaborSupplySep==1)	chi	= meanlabeff / (0.75 **(-gam) * (1.0/3.0)**(1.0/frisc
 IF (LaborSupplyGHH==1)	chi = meanlabeff / ((1.0/3.0)**(1.0/frisch)) 
 
 !requires an intial guess of profits if DistributeProfitsInProportion = 1, since output not known in advance
-IF(DistributeProfitsInProportion==1) THEN
-	!these will be updated in iterations
-	IF(OneAssetNoCapital==0) THEN 
-		IF (LaborSupplySep==1) profit = (1.0-mc)*16.0/KYratio
-		IF (LaborSupplyGHH==1) profit = (1.0-mc)*14.0/KYratio
-		IF (NoLaborSupply==1) profit = (1.0-mc)*12.0/KYratio
-	ELSE IF(OneAssetNoCapital==1) THEN 
-		profit = (1.0-mc)*1.0
-	END IF
-
-END IF	
+IF(OneAssetNoCapital==0) THEN 
+	IF (LaborSupplySep==1) profit = (1.0-mc)*16.0/KYratio
+	IF (LaborSupplyGHH==1) profit = (1.0-mc)*14.0/KYratio
+	IF (NoLaborSupply==1) profit = (1.0-mc)*12.0/KYratio
+ELSE IF(OneAssetNoCapital==1) THEN 
+	profit = (1.0-mc)*1.0
+END IF
 
 
 

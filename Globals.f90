@@ -12,9 +12,9 @@ integer	:: Display, ReportNonMonotonicity, NoLaborSupply,LaborSupplySep,LaborSup
 integer	:: PermanentShock, SolveFlexPriceTransition, SolveStickyPriceTransition, SolveZLBTransition, FirmDiscountRate, ImposeEqumInCalibration,UpdateFlexUsingBond, OppositeWorldBondFunction
 integer :: ComputeCumulativeMPC, ScaleDisutilityIdio,SaveTransitionPolicyFns,SaveTime1PolicyFns,UseFlexTransitionAsGuess,DoPriceExperiments,DistributeProfitsInProportion,TaxHHProfitIncome
 integer :: BackwardTermInTaylorRule,FixProfitsOutOfSteadyState,AdjGovBudgetConstraint,ConvergenceRelToOutput,AdjustProdGridFrisch,FixBorrowRateTransition,WhichPriceExperiment(16)
-integer :: GovExpConstantFracOutput,GovBondResidualZeroWorld,ExponAdjustConstFn,Kappa3LinearOrMax,PinKappa1ByKappa02,ImposeMaxHours,RebateCorpTaxLumpSum,OneAssetNoCapital,GovBCFDScheme
-integer :: ReadEarningsProcess,StickyPriceAlgorithm,ZLBAlgorithm,PerfectAnnuityMarkets,CalibrateRhoAtInitialGuess,FixedValueForD,NoChangeLabDisutility,TransitionTimeStepType,RepAgentModel
-integer :: SymmetricAdjustmentCost,NoDepositCost,AdjustCostFnRatio,SobolSequenceExploration,CalibrateRhoInExploration,MatchRelativeToTargetOutput,CalibrateCloseToSobol,DividendFundLumpSum,BondsInUtility
+integer :: GovExpConstantFracOutput,GovBondResidualZeroWorld,ExponAdjustConstFn,Kappa3LinearOrMax,PinKappa1ByKappa02,ImposeMaxHours,OneAssetNoCapital,GovBCFDScheme
+integer :: ReadEarningsProcess,StickyPriceAlgorithm,ZLBAlgorithm,PerfectAnnuityMarkets,CalibrateRhoAtInitialGuess,FixedValueForD,NoChangeLabDisutility,TransitionTimeStepType
+integer :: SymmetricAdjustmentCost,NoDepositCost,AdjustCostFnRatio,SobolSequenceExploration,CalibrateRhoInExploration,MatchRelativeToTargetOutput,CalibrateCloseToSobol,BondsInUtility
 logical :: flextransition,stickytransition,zlbtransition,testingGHH
 integer :: maxiter,maxitertransflex,maxitertranssticky,maxiterKFE,maxiterequmss,maxiterrho,nfeed
 real(8) :: Vtol,KFEtol,deltass,deltakfe,deltacumcon,nendtrans,deltatransvec(Ttransition),cumdeltatrans(Ttransition),toltransition,deltatransparam,deltatransmin,deltatransmax,adjfricshgridfrac,deltatransnu
@@ -64,7 +64,8 @@ real(8), dimension(:), allocatable			:: gvec
 real(8) :: delta
 
 !PARAMETER GLOBALS
-real(8)     :: rho,gam,utilcost,chi,frisch,blim,nbl,abl,prefshock,fundlev,fundbond,deathrate,meanlabeff,profdistfrac
+real(8)     :: rho,gam,utilcost,chi,frisch,blim,nbl,abl,prefshock,deathrate,meanlabeff
+real(8)     :: profdistfracA,profdistfracB,profdistfracW,profdistfracL
 real(8)     :: elast,alpha,deprec,alphatilde,theta,phitaylor,phifg,bondelast,borrwedge,mpshock,bondadjust,bondelastrelgdp,taylorpers
 real(8) 	:: kappa0_d,kappa1_d,kappa2_d,kappafc_d,kappa0_w,kappa1_w,kappa2_w,kappafc_w,kappa3,kappa4_d,kappa4_w
 real(8) 	:: dmin,taxincrstart,taxincrdecay,housedeprec,dexog,utilelast,utilelastalpha,fixnomgovdebt

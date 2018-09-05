@@ -1,0 +1,45 @@
+normalize P=N=Y=1 in steady-state
+target K_totoutput_ratio
+guess labor_Y labor_N 
+
+output = 1.0
+varieties = 1.0
+totoutput = output*varieties
+
+	capital = totoutput * K_totoutput_ratio
+	rcapital = ((1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N)/K_totoutput_ratio
+	capital_Y = (1.0-1.0/elast)*alpha_Y*drs_Y*output/rcapital
+	capital_N = (1.0/elast)*alpha_N*drs_Y*tot_output/rcapital
+	tfp_Y = output / (((capital_Y**alpha_Y)*(labor_Y**(1.0-alpha_Y))) ** drs_Y)
+	tfp_N = varieties / (((capital_N**alpha_N)*(labor_N**(1.0-alpha_N))) ** drs_N)
+
+	wage_N = (1.0/elast)*(1.0-alpha_N)*theta_N*totoutput/labor_N
+	wage_Y = (1.0-1.0/elast)*(1.0-alpha_Y)*theta_Y*output/labor_Y
+
+	mc_N = (1.0/tfp_N)*((rcapital/alpha_N)**alpha_N) *((wage_N/(1.0-alpha_N)**(1.0-alpha_N))
+	mc_Y = (1.0/tfp_Y)*((rcapital/alpha_Y)**alpha_Y) *((wage_Y/(1.0-alpha_Y)**(1.0-alpha_Y))
+
+	grossprofit_W = (output**(1.0/drs_Y))* mc_Y *(1.0-drs_Y)/drs_Y
+	netprofit_W = varieties*grossprofit_W
+	grossprofit_R = (varities**(1.0/drs_N-1.0))* mc_N */drs_N
+	netprofit_R = varieties*(1.0-drs_N)*grossprofit_R
+	profit = netprofit_R + netfprofit_Y
+
+	ra = rcapital - deprec
+	equity_A = profdistfracA*profit/ra
+	equity_B = profdistfracB*profit/rb
+
+	solve household problem
+
+	
+FOR equm with fixed rho: 
+get Ehours_Y Ehours_N Ea
+update using K_totoutput_ratio = Ea - equityA /tot_output
+labor_Y = Ehours_Y
+labor_N = Ehours_N
+
+For calibrating rho, can just use labor from last iteration
+get Ehours_Y Ehours_N Ea
+
+Outside of steady state. Iterate over K_totoutput_ratio and inflation.
+Problem is the formulas all use the steady-state shares. We should write these in terms of P_W.

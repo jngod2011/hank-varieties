@@ -6,7 +6,7 @@ USE Procedures
 
 IMPLICIT NONE
 
-INTEGER			:: ia,ib,iy,iaby,iab
+INTEGER			:: ia,ib,iy,iaby,iab,io,ip,iy2,io2,ip2
 REAL(8)         :: lmean
 REAL(8)         :: leye(ngpy,ngpy)
 
@@ -17,52 +17,100 @@ leye = 0.0; DO iy = 1,ngpy
 	leye(iy,iy) = 1.0
 END DO
 
+!create occ, prod indices
+iy = 0
+DO io = 1,ngpocc
+	DO ip = 1,ngpprod
+		iy = iy+1
+		occfromy(iy) = io
+		prodfromy(iy) = ip
+		yfromoccprod(io,ip) = iy
+	END DO
+END DO	
+
 !productivity process
-IF(ngpy==1) THEN
-	logygrid = 0.0
-	ygrid = 1.0
-	ymarkov = 0.0
-	ytrans = 1.0
-	ydist = 1.0
+IF(ngpprod==1) THEN
+	logprodgrid = 0.0
+	prodgrid = 1.0
+	prodmarkov = 0.0
+	prodtrans = 1.0
+	proddist = 1.0
 
 ELSE IF (ReadEarningsProcess==1) THEN
-	OPEN(1, FILE = trim(EarningsProcessDir) // '/ygrid_combined.txt');READ(1,*) logygrid;CLOSE(1)
-	OPEN(1, FILE = trim(EarningsProcessDir) // '/ydist_combined.txt');READ(1,*) ydist;CLOSE(1)
-	OPEN(1, FILE = trim(EarningsProcessDir) // '/ymarkov_combined.txt');READ(1,*) ymarkov;CLOSE(1)
+	OPEN(1, FILE = trim(EarningsProcessDir) // '/ygrid_combined.txt');READ(1,*) logprodgrid;CLOSE(1)
+	OPEN(1, FILE = trim(EarningsProcessDir) // '/ydist_combined.txt');READ(1,*) proddist;CLOSE(1)
+	OPEN(1, FILE = trim(EarningsProcessDir) // '/ymarkov_combined.txt');READ(1,*) prodmarkov;CLOSE(1)
 	IF (AdjustProdGridFrisch==1) logygrid = logygrid/ (1.0+adjfricshgridfrac*frisch)
-	ygrid = exp(logygrid)
-	ymarkov = TRANSPOSE(ymarkov) !since fortran reads in column major order	
+	prodgrid = exp(logprodgrid)
+	prodmarkov = TRANSPOSE(prodmarkov) !since fortran reads in column major order	
 	!fix up rounding in markov matrix
-	DO iy = 1,ngpy
-		ymarkov(iy,iy) = ymarkov(iy,iy) - SUM(ymarkov(iy,:))
+	DO ip = 1,ngpprod
+		prodmarkov(ip,ip) = prodmarkov(ip,ip) - SUM(prodmarkov(ip,:))
 	END DO
 	
 ELSE IF (TwoPointWageProcess==1) THEN
-	ygrid(1) = 0.8
-	ygrid(2) = 1.2
-	logygrid = log(ygrid)
+	prodgrid(1) = 0.8
+	prodgrid(2) = 1.2
+	logprodgrid = log(prodgrid)
 	
-	ytrans(1,1) = 1.0-0.06667
-	ytrans(1,2) = 0.06667
-	ytrans(2,1) = 0.06667
-	ytrans(2,2) = 1.0-0.06667
-	ydist(1) = 0.5
-	ydist(2) = 0.5
-	ymarkov = (ytrans-leye)/1.0 !assumes ytrans is quarterly	
+	prodtrans(1,1) = 1.0-0.06667
+	prodtrans(1,2) = 0.06667
+	prodtrans(2,1) = 0.06667
+	prodtrans(2,2) = 1.0-0.06667
+	proddist(1) = 0.5
+	proddist(2) = 0.5
+	prodmarkov = (prodtrans-leye)/1.0 !assumes ytrans is quarterly	
 END IF
 
+!adjust mean productivity
+lmean = DOT_PRODUCT(proddist,prodgrid)
+prodgrid = meanlabeff*prodgrid/lmean
+
+
+!occupation types
+IF(ngpocc==1) THEN
+	occgrid = 0.5
+	occdist = 1.0
+	ELSE !equally spaced [0,1]
+	occgrid(1) = 0.0
+	occgrid(ngpocc) = 1.0
+	IF(ngpocc>=2) THEN
+		DO io = 2,ngpocc-1
+			occgrid(io) = occgrid(io-1) + 1.0/real(ngpocc-1)
+		END DO	
+	END IF
+	occdist = 1.0/ngpocc
+END IF	
+
+
+!construct combined markov process and indicators
+ymarkov = 0
+iy = 0
+DO iy = 1,ngpy
+	io = occfromy(iy)
+	ip = prodfromy(iy)
+	yprodgrid(iy) = prodgrid(ip)
+	yoccgrid(iy) = occgrid(io)
+	ydidst(iy) = proddist(ip)*occdist(io)
+	DO iy2 = 1,ngpy2
+		io2 = occfromy(iy2)
+		ip2 = prodfromy(iy2)
+		IF (io==io2) THEN
+			ymarkvov(iy,iy2) = prodmarkov(ip,ip2)
+		END IF
+	END DO
+END DO		
+
+	
 ymarkovdiag = 0.0
 DO iy = 1,ngpy
 	ymarkovdiag(iy,iy) = ymarkov(iy,iy)
 END DO
 ymarkovoff = ymarkov-ymarkovdiag
 
-!adjust mean productivity
-lmean = DOT_PRODUCT(ydist,ygrid)
-ygrid = meanlabeff*ygrid/lmean
 
 !profit distribution shares: compute in advance so can hold fix when labor productivity distribution moves
-profsharegrid = ygrid/meanlabeff
+profsharegrid = yprodgrid/meanlabeff
 
 !out of steady-state adjustments
 prodgridscale = 1.0
@@ -131,20 +179,7 @@ END DO
 END DO
 END DO
 
-!
-! lf = exp(-agrid+110.0)
-! lf = lf/sum(lf*adelta)
-! write(*,*) 'sum lf',sum(lf*adelta),'mean lf',sum(lf*adelta*agrid)
-!
-! CALL AdjustDistProportionately(agrid,adelta,lf,0.8_8,lg)
-!
-! write(*,*) 'sum lf',sum(lf*adelta),'sum lg',sum(lg*adelta)
-! write(*,*) 'mean lf',sum(lf*adelta*agrid),'mean lg',sum(lg*adelta*agrid)
-! write(*,*) 'lf',lf
-! write(*,*) 'lg',lg
-! write(*,*) 'lf*adelta',lf*adelta
-! write(*,*) 'lg*adelta',lg*adelta
-! STOP
+
 
 END SUBROUTINE Grids
 

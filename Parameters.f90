@@ -11,7 +11,9 @@ integer,parameter :: ngpa		= 40 !2		    !grid for illiquid assets
 integer,parameter :: ngpbPOS	= 40 !60		    !grid for liquid assets, >=0 range
 integer,parameter :: ngpbNEG	= 10		    !grid for liquid assets, <0 range only active if Borrowing==1
 integer,parameter :: ngpb		= ngpbPOS + Borrowing*ngpbNEG
-integer,parameter :: ngpy		= 33 !30
+integer,parameter :: ngpprod	= 2 !33
+integer,parameter :: ngpocc		= 4
+integer,parameter :: ngpy		= ngpprod*ngpocc
 integer,parameter :: naby		= ngpa*ngpb*ngpy
 integer,parameter :: nab		= ngpa*ngpb
 
