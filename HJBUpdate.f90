@@ -8,19 +8,19 @@ USE mUMFPACK
 IMPLICIT NONE
 
 INTEGER			:: ia,ib,iy,iaby,iab,ii,iu,iw(naby)
-REAL(8) 		:: lVaF,lVaB,lVbF,lVbB,lcF,lcB,lc0,lsF,lsB,ls0,lHcF,lHcB,lHc0,ldFB,ldBF,ldBB,lHdFB,lHdBF,lHdBB,lpF,lpB,lp0
+REAL(8) 		:: lVaF,lVaB,lVbF,lVbB,lcF,lcB,lc0,lsF,lsB,ls0,lHcF,lHcB,lHc0,ldFB,ldBF,ldBB,lHdFB,lHdBF,lHdBB,lhF,lhB,lh0,llabdisutil
 INTEGER 		:: validF,validB,validFB,validBF,validBB
 REAL(8) 		:: ladriftB,ladriftF,lbdriftB,lbdriftF,lval,laudriftB,laudriftF,lbudriftB,lbudriftF
 REAL(8), DIMENSION(nab) :: 	luvec,lbvec,lVvec,ldiag
 TYPE(tCSR_di), DIMENSION(ngpy) 	 :: AUMF     !umfpack type
 
  c = 0.0
-p = 0.0
+h = 0.0	
 d = 0.0
 u = 0.0
 s = 0.0
 
-!$OMP PARALLEL DO PRIVATE(ia,ib,iy,ii,iw,lVaF,lVaB,lVbF,lVbB,lcF,lcB,lc0,lsF,lsB,ls0,lHcF,lHcB,lHc0,ldFB,ldBF,ldBB,lHdFB,lHdBF,lHdBB,lpF,lpB,lp0,validF,validB,validFB,validBF,validBB)
+!$OMP PARALLEL DO PRIVATE(ia,ib,iy,ii,iw,lVaF,lVaB,lVbF,lVbB,lcF,lcB,lc0,lsF,lsB,ls0,lHcF,lHcB,lHc0,ldFB,ldBF,ldBB,lHdFB,lHdBF,lHdBB,lhF,lhB,lh0,validF,validB,validFB,validBF,validBB,llabdisutil)
 DO iaby = 1,naby
 	ia = afromaby(iaby)
 	ib = bfromaby(iaby)
@@ -44,13 +44,18 @@ DO iaby = 1,naby
 	IF (ib>1) lVbB = max(lVbB,dVbmin)
 	
 	
-	gbdrift = netinc2liqgrid(iy) + bdrift(ib) + fspamount(ia,ib,iy)
-	glabdisutil = labdisutilgrid(iy)
+	gidioprod = ygrid(iy)
+	IF(prodispshock==.true.) gidioprodss = equmINITSS%ygrid(iy)
+! 	IF(prodispshock==.true.) gidioscale = gidioprod/gidioprodSS
+	gnetwage = netwage*gidioprod
+	gbdrift = bdrift(ib) + lumptransfer
+	IF(DistributeProfitsInProportion==1 .and. TaxHHProfitIncome==0) gbdrift = gbdrift + (1.0-profdistfrac)*(1.0-corptax)*profit*profsharegrid(iy)
+	IF(DistributeProfitsInProportion==1 .and. TaxHHProfitIncome==1) gbdrift = gbdrift + (1.0-labtax)*(1.0-profdistfrac)*(1.0-corptax)*profit*profsharegrid(iy)
 	gill = agrid(ia)
 	
 	!consumption decision
 	IF(ib<ngpb) THEN
-		CALL OptimalConsumption(lVbF,lcF,lpF,lsF,lHcF)
+		CALL OptimalConsumption(lVbF,lcF,lhF,lsF,lHcF)
 	ELSE
 		lsF = 0.0
 		lHcF = -1.0e12
@@ -59,38 +64,26 @@ DO iaby = 1,naby
 	IF(lsF>0.0) validF = 1
 	
 	IF (ib>1) THEN		
-		CALL OptimalConsumption(lVbB,lcB,lpB,lsB,lHcB)
+		CALL OptimalConsumption(lVbB,lcB,lhB,lsB,lHcB)
 	ELSE
-		lpB = max((1.0-nondurwgt)*(gbdrift-glabdisutil) - nondurwgt*housefrac*flowamnt*gill, 0.0_8)
-		lcB = gbdrift-lpB
-		lsB = 0.0
-		lHcB = utilfn(((lcB-glabdisutil)**nondurwgt)*((lpB+housefrac*flowamnt*gill)**(1.0-nondurwgt)))
-! 		lHcB = utilfn(lcB-glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(ia))		
+		CALL OptimalConsumption( -999.9_8 ,lcB,lhB,lsB,lHcB)
 	END IF				 
 	validB = 0
 	IF(lsB<0.0) validB = 1
-		
-	lp0 = max((1.0-nondurwgt)*(gbdrift-glabdisutil) - nondurwgt*housefrac*flowamnt*gill, 0.0_8)
-	lc0 = gbdrift-lp0
-	ls0 = 0.0
-	IF(lc0-glabdisutil>cmin) THEN !can happen if rb<0...
-		lHc0 = utilfn(((lc0-glabdisutil)**nondurwgt)*((lp0+housefrac*flowamnt*gill)**(1.0-nondurwgt)))
-! 		lHc0 = utilfn(lc0-glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(ia))
-	ELSE
-		lHc0 = -1.0e12
-	END IF
+	
+	CALL OptimalConsumption(-999.9_8,lc0,lh0,ls0,lHc0)
 		
 	IF (validF==1 .and. (validB==0 .or. lHcF>=lHcB) .and. lHcF>=lHc0) THEN	!forward
 		c(ia,ib,iy) = lcF
-		p(ia,ib,iy) = lpF
+		h(ia,ib,iy) = lhF
 		s(ia,ib,iy) = lsF
 	ELSE IF (validB==1 .and. (validF==0 .or. lHcB>=lHcF) .and. lHcB>=lHc0) THEN	!backward
 		c(ia,ib,iy) = lcB
-		p(ia,ib,iy) = lpB
+		h(ia,ib,iy) = lhB
 		s(ia,ib,iy) = lsB	
 	ELSE 
 		c(ia,ib,iy) = lc0
-		p(ia,ib,iy) = lp0
+		h(ia,ib,iy) = lh0
 		s(ia,ib,iy) = ls0
 	END IF
 	
@@ -116,8 +109,15 @@ DO iaby = 1,naby
 	END IF
 
 	IF(ia>1 ) THEN !a backward, b backward
-! 		IF (ib==1) lVbB = utilfn1(lcB-glabdisutil)
-		IF (ib==1) lVbB = nondurwgt * utilfn1(((lcB-glabdisutil)**nondurwgt)*((lpB+housefrac*flowamnt*gill)**(1.0-nondurwgt))) * ((lcB-glabdisutil)/(lpB+housefrac*flowamnt*gill))**(nondurwgt-1.0)
+ 		IF (ib==1) THEN
+			IF(ScaleDisutilityIdio==0) THEN
+				IF(prodispshock==.false. .or. ProdDispScaleDisutilty==0) llabdisutil = lhB**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+				IF(prodispshock==.true. .and. ProdDispScaleDisutilty==1) llabdisutil =  (ygrid(iy)/equmINITSS%ygrid(iy)) * lhB**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+			END IF	
+			IF(ScaleDisutilityIdio==1) llabdisutil = ygrid(iy)*lhB**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+			IF(NoLaborSupply==1 .or. LaborSupplySep==1) lVbB = utilfn1(lcB)
+			IF(LaborSupplyGHH==1) lVbB = utilfn1(lcB-(chi/labwedge)*llabdisutil)
+		END IF
 		ldBB = adjcostfn1inv(lVaB/lVbB-1.0,agrid(ia))
 		lHdBB = lVaB*ldBB - lVbB*(ldBB + adjcostfn(ldBB,agrid(ia)))
 		validBB = 0
@@ -141,12 +141,17 @@ DO iaby = 1,naby
 	
 
 
-! 	u(ia,ib,iy) = utilfn(c(ia,ib,iy) - glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(ia))
-	u(ia,ib,iy) = utilfn(((c(ia,ib,iy)-glabdisutil)**nondurwgt) *((p(ia,ib,iy)+housefrac*flowamnt*gill)**(1.0-nondurwgt)))
+	IF(NoLaborSupply==1) u(ia,ib,iy) = utilfn(c(ia,ib,iy))
+	IF (ScaleDisutilityIdio==0) THEN
+		IF(prodispshock==.false. .or. ProdDispScaleDisutilty==0) llabdisutil = h(ia,ib,iy)**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+		IF(prodispshock==.true. .and. ProdDispScaleDisutilty==1) llabdisutil = (gidioprod/gidioprodSS)*h(ia,ib,iy)**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+	END IF
+	IF (ScaleDisutilityIdio==1) llabdisutil = ygrid(iy)*h(ia,ib,iy)**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+	IF(LaborSupplySep==1) u(ia,ib,iy) = utilfn(c(ia,ib,iy)) - (chi/labwedge)*llabdisutil
+	IF(LaborSupplyGHH==1) u(ia,ib,iy) = utilfn(c(ia,ib,iy) - (chi/labwedge)*llabdisutil)
 	bdot(ia,ib,iy) = s(ia,ib,iy)-d(ia,ib,iy)- adjcostfn(d(ia,ib,iy),agrid(ia))
 	
-! 	write(*,*) ia,ib,iy,c(ia,ib,iy),d(ia,ib,iy),s(ia,ib,iy)				
-! 			write(*,*) lsF,lsB,lcF,lcB,ldF,ldB,ldFF,ldFB,ldBF,ldBB
+	IF(BondsInUtility==1) u(ia,ib,iy) = u(ia,ib,iy) + bondutilfn(bgrid(ib))
 END DO
 !$OMP END PARALLEL DO
 
@@ -170,21 +175,21 @@ DO iy = 1,ngpy
 	
 		!vector of constants
 		luvec(iab) = u(ia,ib,iy)
-		lbvec(iab) = delta*luvec(iab) + V(ia,ib,iy) + delta*DOT_PRODUCT(ymarkovoff(iy,:),V(ia,ib,:))
+		lbvec(iab) = delta*luvec(iab) + V(ia,ib,iy) + delta*DOT_PRODUCT(prodmarkovscale*ymarkovoff(iy,:),V(ia,ib,:))
 
 		!a drifts
-		ladriftB = min(d(ia,ib,iy),0.0_8) + min(adrift(ia) + netinc2illgrid(iy),0.0_8)
-		ladriftF = max(d(ia,ib,iy),0.0_8) + max(adrift(ia) + netinc2illgrid(iy),0.0_8)
+		ladriftB = min(d(ia,ib,iy),0.0_8) + min(adrift(ia),0.0_8)
+		ladriftF = max(d(ia,ib,iy),0.0_8) + max(adrift(ia),0.0_8)
 	
 		!b drift
 		lbdriftB = min(-d(ia,ib,iy) - adjcostfn(d(ia,ib,iy),agrid(ia)),0.0) + min(s(ia,ib,iy),0.0_8)
 		lbdriftF = max(-d(ia,ib,iy) - adjcostfn(d(ia,ib,iy),agrid(ia)),0.0) + max(s(ia,ib,iy),0.0_8)
 
 		!a drift, upwind
-		IF(ib<ngpb) laudriftB = min(d(ia,ib,iy) + adrift(ia) + netinc2illgrid(iy),0.0_8)
-		IF(ib<ngpb) laudriftF = max(d(ia,ib,iy) + adrift(ia) + netinc2illgrid(iy),0.0_8)
-		IF(ib==ngpb) laudriftB = min(d(ia,ib-1,iy) + adrift(ia) + netinc2illgrid(iy),0.0_8)
-		IF(ib==ngpb) laudriftF = max(d(ia,ib-1,iy) + adrift(ia) + netinc2illgrid(iy),0.0_8)
+		IF(ib<ngpb) laudriftB = min(d(ia,ib,iy) + adrift(ia),0.0_8)
+		IF(ib<ngpb) laudriftF = max(d(ia,ib,iy) + adrift(ia),0.0_8)
+		IF(ib==ngpb) laudriftB = min(d(ia,ib-1,iy) + adrift(ia),0.0_8)
+		IF(ib==ngpb) laudriftF = max(d(ia,ib-1,iy) + adrift(ia),0.0_8)
 
 		!b drift,upwind
 		IF(ib<ngpb) lbudriftB = min(s(ia,ib,iy) -d(ia,ib,iy) - adjcostfn(d(ia,ib,iy),agrid(ia)),0.0_8)
@@ -333,7 +338,7 @@ DO iy = 1,ngpy
 	BCSR(iy)%val = -delta*ACSR(iy)%val
 	BCSR(iy)%row = ACSR(iy)%row
 	BCSR(iy)%col = ACSR(iy)%col
-	ldiag = 1.0 + delta*(rho+deathrate) - delta*ymarkovdiag(iy,iy)
+	ldiag = 1.0 + delta*(rho+deathrate) - delta*prodmarkovscale*ymarkovdiag(iy,iy)
 	CALL apldia (BCSR(iy)%n, 0, BCSR(iy)%val, BCSR(iy)%col, BCSR(iy)%row, ldiag, BCSR(iy)%val, BCSR(iy)%col, BCSR(iy)%row, iw )
 	AUMF(iy) = tCSR_di(BCSR(iy)%row-1,BCSR(iy)%col-1,BCSR(iy)%val) 
 	lVvec = AUMF(iy) .umfpack. lbvec

@@ -17,17 +17,14 @@ OPEN(3, FILE = trim(OutputDir) // 'bgrid.txt', STATUS = 'replace'); CALL WriteMa
 OPEN(3, FILE = trim(OutputDir) // 'ygrid.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpy,1,ygrid)
 OPEN(3, FILE = trim(OutputDir) // 'adelta.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpa,1,adelta)
 OPEN(3, FILE = trim(OutputDir) // 'bdelta.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpb,1,bdelta)
-OPEN(3, FILE = trim(OutputDir) // 'labdisutilgrid.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpy,1,labdisutilgrid)
-OPEN(3, FILE = trim(OutputDir) // 'lgrid.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpy,1,lgrid)
-OPEN(3, FILE = trim(OutputDir) // 'grosslabincgrid.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpy,1,grosslabincgrid)
 
 !initial steady state summary stats
 OPEN(3, FILE = trim(OutputDir) // 'InitialSteadyStateParameters.txt', STATUS = 'replace')
 	write(3,*) 'gam ',gam
 	write(3,*) 'rho ',rho
 	write(3,*) 'deathrate ',deathrate
-	write(3,*) 'kappafc_w ',equmINITSS%kappafc_w
-	write(3,*) 'kappa0_w ',kappa0_w
+	write(3,*) 'kappafc_w ',kappafc_w
+	write(3,*) 'kappa0_w ',equmINITSS%kappa0_w
 	write(3,*) 'kappa1_w ',kappa1_w
 	write(3,*) 'kappa2_w ',kappa2_w
 	write(3,*) 'kappa3 ',kappa3
@@ -37,13 +34,7 @@ OPEN(3, FILE = trim(OutputDir) // 'InitialSteadyStateParameters.txt', STATUS = '
 	write(3,*) 'kappa1_d ',kappa1_d
 	write(3,*) 'kappa2_d ',kappa2_d
 	write(3,*) 'kappa4_d ',kappa4_d
-	write(3,*) 'housefrac ',housefrac
-	write(3,*) 'rhousing ',rhousing
-	write(3,*) 'flowamnt ',flowamnt
-	write(3,*) 'housemaint ',housemaint
-	write(3,*) 'housedeprec ',housedeprec
 	write(3,*) 'corptax ',corptax
-	write(3,*) 'operatecost ',operatecost
 
 	write(3,*) 'ra ',equmINITSS%ra
 	write(3,*) 'rb ',equmINITSS%rb
@@ -75,28 +66,25 @@ OPEN(3, FILE = trim(OutputDir) // 'InitialSteadyStateParameters.txt', STATUS = '
 	write(3,*) 'profit ',equmINITSS%profit
 	write(3,*) 'dividend ',equmINITSS%dividend
 	write(3,*) 'divrate ',equmINITSS%divrate
-	write(3,*) 'intfirmbond ',equmINITSS%intfirmbond
 
 	write(3,*) 'borrwedge ',equmINITSS%borrwedge
 	write(3,*) 'rho ',equmINITSS%rho
 	write(3,*) 'fundlev ',equmINITSS%fundlev
 	write(3,*) 'deprec ',deprec
-	write(3,*) 'directdepfrac ',directdepfrac
-	write(3,*) 'directdepminfrac ',directdepminfrac
-	write(3,*) 'directdepmaxfrac ',directdepmaxfrac
-	write(3,*) 'directdepmin ',directdepmin
-	write(3,*) 'directdepmax ',directdepmax
+	write(3,*) 'alpha ',alpha
 	
 	write(3,*) 'Ea ',statsINITSS%Ea
 	write(3,*) 'Eb ',statsINITSS%Eb
 	write(3,*) 'Ec ',statsINITSS%Ec
-	write(3,*) 'Erent ',statsINITSS%Erent
+	write(3,*) 'Ehours ',statsINITSS%Ehours
+	write(3,*) 'Elabor ',statsINITSS%Elabor
 	write(3,*) 'Ed ',statsINITSS%Ed
 	write(3,*) 'Ewage ',statsINITSS%Ewage
 	write(3,*) 'Enetlabinc ',statsINITSS%Enetlabinc
 	write(3,*) 'Egrosslabinc ',statsINITSS%Egrosslabinc
+	write(3,*) 'Enetprofinc ',statsINITSS%Enetprofinc
+	write(3,*) 'Egrossprofinc ',statsINITSS%Egrossprofinc
 	write(3,*) 'Einc ',statsINITSS%Einc
-	write(3,*) 'Ehours ',statsINITSS%Ehours
 	write(3,*) 'Enw ',statsINITSS%Enw
 	write(3,*) 'FRACa0 ',statsINITSS%FRACa0
 	write(3,*) 'FRACb0 ',statsINITSS%FRACb0
@@ -111,7 +99,6 @@ OPEN(3, FILE = trim(OutputDir) // 'InitialSteadyStateParameters.txt', STATUS = '
 	write(3,*) 'EbN ',statsINITSS%EbN
 	write(3,*) 'EbP ',statsINITSS%EbP
 	write(3,*) 'Eadjcost ',statsINITSS%Eadjcost
-	write(3,*) 'Efsp ',statsINITSS%Efsp
 	write(3,*) 'GINIa ',statsINITSS%GINIa
 	write(3,*) 'GINIb ',statsINITSS%GINIb
 	write(3,*) 'GINInw ',statsINITSS%GINInw
@@ -144,6 +131,9 @@ OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'Eb_incQ.txt', STATUS = 'replace
 OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'Ec_incQ.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,1,4,statsINITSS%Ec_incQ)
 OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'Einc_incQ.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,1,4,statsINITSS%Einc_incQ)
 
+OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'Ec_nwQ_add.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,1,12,statsINITSS%Ec_nwQ_add)
+
+
 DO iy = 1,ngpy
 	IF (iy<10) WRITE(UNIT=lstring, FMT='(I1)') iy
 	IF (iy >= 10) WRITE(UNIT=lstring, FMT='(I2)') iy
@@ -151,12 +141,26 @@ DO iy = 1,ngpy
 	OPEN(3, FILE = trim(OutputDir) // "INITSS/" // 'V_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%V(:,:,iy))
 	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'dep_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%d(:,:,iy))
 	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'con_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%c(:,:,iy))
+	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'sav_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%s(:,:,iy))
+	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'hour_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%h(:,:,iy))
 	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'bdot_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%bdot(:,:,iy))
 	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'gjoint_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%gjoint(:,:,iy))
 	OPEN(3, FILE = trim(OutputDir) // "INITSS/" // 'B_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%B(iy)%val)
-	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'ccum1_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,ccum1(:,:,iy))
-	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'ccum4_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,ccum4(:,:,iy))
-	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'ccum2_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,ccum2(:,:,iy))
+
+	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'ccum1_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,cumINITSS%ccum1(:,:,iy))
+	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'ccum2_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,cumINITSS%ccum2(:,:,iy))
+	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'ccum4_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,cumINITSS%ccum4(:,:,iy))
+	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'dcum1_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,cumINITSS%dcum1(:,:,iy))
+	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'dcum2_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,cumINITSS%dcum2(:,:,iy))
+	OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'dcum4_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,cumINITSS%dcum4(:,:,iy))
+
+	IF(ComputeDiscountedMPC==1) THEN
+		OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'mpc_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%mpc(:,:,iy))
+		OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'subeff1ass_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%subeff1ass(:,:,iy))
+		OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'subeff2ass_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%subeff2ass(:,:,iy))
+		OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'wealtheff1ass_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%wealtheff1ass(:,:,iy))
+		OPEN(3, FILE = trim(OutputDir) // "INITSS/"  // 'wealtheff2ass_INITSS_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,solnINITSS%wealtheff2ass(:,:,iy))
+	END IF	
 
 END DO
 

@@ -9,8 +9,9 @@ IMPLICIT NONE
 INTEGER, INTENT(IN)     					:: lnpar
 REAL(8), DIMENSION(lnpar), INTENT(IN)  	:: ly   !length lnpar
 REAL(8), INTENT(OUT) 					:: lf,lfvec(nmoments)
-INTEGER     	:: ip
-REAL(8)			:: lx(lnpar),lcapital,loutput,lKNratio
+INTEGER     	:: ip,iflag
+REAL(8)			:: lx(lnpar),loutput,lKNratio,lub
+REAL(8), EXTERNAL	:: FnCapitalEquity
 
 lx = ly/paramscale
 ! write(*,*) 'lx is: ',lx
@@ -84,30 +85,20 @@ ELSE IF(NoDepositCost==1) THEN
 	kappa4_d = 0.0
 END IF
 
-KYratio = targetKYratio
+
+
+
+KYratio = targetKYratio  !ratio to productive output
 KNratio = (tfp*KYratio)**(1.0/(1.0-alpha))
 rcapital = mc*alpha/KYratio
 wage = mc*(1.0-alpha)*tfp*(KNratio**alpha)
 netwage = (1.0-labtax)*wage
-rborr = rb + borrwedge
-labor = (netwage/chi)**frisch
-capital = KNratio*labor
-profit = (1.0-mc-operatecost)*capital/KYratio - priceadjust
-dividend = profit*(1.0-corptax)
-IF(DividendFundLumpSum==0) divrate = dividend/capital
 IF(DividendFundLumpSum==1) divrate = 0.0
+IF(DividendFundLumpSum==0) divrate =  (1.0-corptax)*(1.0-mc)/KYratio !outside of steady state include price adjustments
+IF(DistributeProfitsInProportion==1) divrate =  profdistfrac*divrate
+
 ra = (rcapital - deprec + divrate - fundlev*rb)/(1.0-fundlev)
-IF(DividendFundLumpSum==0) equity = 0.0
-IF(DividendFundLumpSum==1)equity = profit/ra
-output = tfp*(capital**alpha)*(labor**(1.0-alpha)) + rhousing*housefrac*((1.0-fundlev)*capital+equity)/(1.0-housefrac)
-fundbond = -capital*fundlev
-govbond = -ssdebttogdp*output
-priceadjust = 0.0
-intfirmbond = 0.0
-
-
-directdepmax = directdepmaxfrac*output
-directdepmin = directdepminfrac*output
+rborr = rb + borrwedge
 
 IF(ImposeEqumInCalibration==0) THEN
 	CALL Grids
@@ -120,34 +111,64 @@ END IF
 
 CALL DistributionStatistics
 
-!model implied moments
-taxrev = labtax*wage*labor - lumptransfer + corptax*profit
-govexp = taxrev + rb*govbond
+labor = Elabor
+IF(DividendFundLumpSum==0) capital = Ea/(1.0-fundlev)
+IF(DividendFundLumpSum==1) THEN
+	
 
-lcapital = (1.0-housefrac)*Ea/(1.0-fundlev)
-IF(DividendFundLumpSum==0) lcapital = (1.0-housefrac)*Ea/(1.0-fundlev)
-IF(DividendFundLumpSum==1) lcapital = (1.0-housefrac)*Ea/(1.0-fundlev + (1.0-mc-operatecost)/(ra*KYratio))
-lKNratio = lcapital/labor
+    IF (Ea<0.1) THEN
+       capital = Ea
+    ELSE
+		IF(FnCapitalEquity(0.00001*Ea)>0.0) THEN
+			lub = 0.00001*Ea
+		ELSEIF(FnCapitalEquity(0.0001*Ea)>0.0) THEN
+			lub = 0.0001*Ea
+		ELSEIF(FnCapitalEquity(0.001*Ea)>0.0) THEN
+			lub = 0.001*Ea
+		ELSEIF(FnCapitalEquity(0.01*Ea)>0.0) THEN
+			lub = 0.01*Ea
+		ELSEIF(FnCapitalEquity(0.1*Ea)>0.0) THEN
+			lub = 0.1*Ea
+		ELSE
+			lub = Ea
+		END IF
+
+		CALL rtsec(FnCapitalEquity,0.0_8,lub,1.0e-6_8,capital,iflag)
+		IF(iflag<0) CALL rtbis(FnCapitalEquity,0.0_8,lub,1.0e-6_8,1.0e-7_8,capital)
+	END IF
+END IF	
+	
+equity = Ea - (1.0-fundlev)*capital
+profit = (1.0-mc)*capital/KYratio - priceadjust
+
+lKNratio = capital/labor
 modelKYratio = (lKNratio**(1.0-alpha)) / tfp
+IF(capital < 1.0e-8) modelKYratio = 0.0
 
+!model implied moments
 IF(MatchRelativeToTargetOutput==0) THEN
-	loutput = tfp*(lcapital**alpha)*(labor**(1.0-alpha)) + rhousing*housefrac*((1.0-fundlev)*lcapital+equity)/(1.0-housefrac)
+	loutput = tfp*(capital**alpha)*(labor**(1.0-alpha)) 
+	loutput = max(loutput, 0.01)
 	modelMeanIll = Ea/loutput
 	modelMeanLiq = Eb/loutput
 	modelMedianIll = PERCa(6)/loutput
 	modelP75Ill = PERCa(7)/loutput
 	modelMedianLiq = PERCb(6)/loutput
-ELSE
-	modelMeanIll = Ea/output
-	modelMeanLiq = Eb/output
-	modelMedianIll = PERCa(6)/output
-	modelP75Ill = PERCa(7)/output
-	modelMedianLiq = PERCb(6)/output
+ELSE !use for no labor supply
+! 	loutput = KYratio/max(capital,1.0e-8)
+	loutput = 1.0
+	modelMeanIll = Ea/loutput
+	modelMeanLiq = Eb/loutput
+	modelMedianIll = PERCa(6)/loutput
+	modelP75Ill = PERCa(7)/loutput
+	modelMedianLiq = PERCb(6)/loutput
 END IF
 modelFracIll0 = FRACa0close 
 modelFracLiq0 = FRACb0close
 modelFracIll0Liq0 = FRACb0a0close 
 modelFracLiqNeg = FRACbN
+
+write(*,*) ra,Ea,Eb,labor,capital, equity, loutput
 
 !moments to match: need to include weights
 ip = 0
@@ -192,7 +213,9 @@ IF (MatchMeanLiq == 1) THEN
 ! 	lfvec(ip) = (modelMeanLiq - targetMeanLiq)
 	lfvec(ip) = (modelMeanLiq/targetMeanLiq -1.0)
 	write(4,*) 'MeanLiq, target: ',targetMeanLiq, ' model: ',modelMeanLiq
-! 	IF(UseDiagWeight==1) diagweight = 1.0/(stdevElogh**2.0)
+! 	IF(UseDiagWeight==1) diagweight = 1.0/
+!upweight by 2                                                                                                                                                                                                                                                                 
+       lfvec(ip) = lfvec(ip)*2.0
 END IF
 IF (MatchMedianLiq == 1) THEN
 	ip = ip+1
@@ -222,6 +245,9 @@ IF (MatchFracIll0Liq0 == 1) THEN
 	ip = ip+1
 	lfvec(ip) = (modelFracIll0Liq0/targetFracIll0Liq0 - 1.0)
 	write(4,*) 'FracIll0Liq0, target: ',targetFracIll0Liq0, ' model: ',modelFracIll0Liq0
+	
+    lfvec(ip) = lfvec(ip)
+	
 END IF
 
 

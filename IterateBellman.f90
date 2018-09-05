@@ -8,39 +8,17 @@ USE mUMFPACK
 IMPLICIT NONE
 
 INTEGER			:: iaby,ii
-REAL(8)			:: lVdiff,ltau,ltau0,ladrift
+REAL(8)			:: lVdiff,ltau,ltau0,ladrift,lc,lh,llabdisutil
 
 delta = deltass
 	
 !set drifts
 ltau = 15.0
-ltau0 = (ra+PerfectAnnuityMarkets*deathrate)*(1.0-housefrac)*(agrid(ngpa)*0.999)**(1.0-ltau)
-!ltau0 = 0.0
-! adrift = (ra+PerfectAnnuityMarkets*deathrate)*(1.0-housefrac)*agrid - ltau0*(agrid**ltau)
-adrift = ra*(1.0-housefrac)*agrid + PerfectAnnuityMarkets*deathrate*agrid - ltau0*(agrid**ltau)
-! adrift = (ra+PerfectAnnuityMarkets*deathrate)*(1.0-housefrac)*agrid
-! adrift(ngpa) = -1.0
+ltau0 = (ra+PerfectAnnuityMarkets*deathrate)*(agrid(ngpa)*0.999)**(1.0-ltau)
+adrift = ra*agrid + PerfectAnnuityMarkets*deathrate*agrid - ltau0*(agrid**ltau)
 bdrift = MERGE((rb+PerfectAnnuityMarkets*deathrate)*bgrid,(rborr+PerfectAnnuityMarkets*deathrate)*bgrid,bgrid>0.0)
-fspamount = 0.0
-IF (LaborSupply==0) THEN
-	lgrid = 1.0
-	labdisutilgrid = 0.0
-END IF
-IF (LaborSupply==1) THEN
-	IF(ScaleGHHIdiosyncratic==0) THEN
-		lgrid = (netwage*ygrid/chi)**frisch
-		labdisutilgrid = chi*(lgrid**(1+1.0/frisch))/(1+1.0/frisch)
-	ELSE IF(ScaleGHHIdiosyncratic==1) THEN
-		lgrid = (netwage/chi)**frisch
-		labdisutilgrid = chi*ygrid*(lgrid**(1+1.0/frisch))/(1+1.0/frisch)
-	END IF
-END IF	
-grosslabincgrid = wage*lgrid*ygrid
-netlabincgrid = netwage*lgrid*ygrid + lumptransfer
-netinc2illgrid = directdepfrac*(min(max(netlabincgrid,directdepmin),directdepmax)-directdepmin)
-netinc2liqgrid = netlabincgrid - netinc2illgrid
 
-IF (Borrowing==1 .and. bgrid(1) < maxval(labdisutilgrid-netinc2liqgrid)/(rborr+PerfectAnnuityMarkets*deathrate)) THEN
+IF (Borrowing==1 .and. bgrid(1) < -lumptransfer/(rborr+PerfectAnnuityMarkets*deathrate)) THEN
 	write(*,*) 'Warning: natural borrowing limit violated'
 END IF
 
@@ -53,21 +31,16 @@ IF	(	(EquilibriumR==0 .and. calibrating==.false.) &
 	.or. (calibrating==.true. .and. ImposeEqumInCalibration==1  .and. neqmiter==1 ) &
 	.or. (calibrating==.true. .and. ImposeEqumInCalibration==0 ))  THEN
 	
-	!$OMP PARALLEL DO PRIVATE (ladrift)
+	!$OMP PARALLEL DO PRIVATE (ladrift,lh,lc,llabdisutil)
 	DO iaby = 1,naby
-		glabdisutil = labdisutilgrid(yfromaby(iaby))
-!   		ladrift = (ra+PerfectAnnuityMarkets*deathrate)*(1.0-housefrac)*agrid(afromaby(iaby))
-  		ladrift = (ra*(1.0-housefrac) + PerfectAnnuityMarkets*deathrate)*agrid(afromaby(iaby))
-! 		ladrift = max(adrift(afromaby(iaby)),0.0)
-! 		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(netlabincgrid(yfromaby(iaby)) + ladrift + bdrift(bfromaby(iaby)) - glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(afromaby(iaby))) ) / (rho)
-! 		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(netlabincgrid(yfromaby(iaby)) + ladrift + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby)) - glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(afromaby(iaby))) ) / (rho+deathrate)
-! 		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(netlabincgrid(yfromaby(iaby)) + ladrift - glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(afromaby(iaby))) ) / (rho)
-! 		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = utilfn(netlabincgrid(yfromaby(iaby))- glabdisutil) / (rho)
-! 		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(netlabincgrid(yfromaby(iaby)) + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby)) - glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(afromaby(iaby))) ) / (rho)
-! 		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(netlabincgrid(yfromaby(iaby)) + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby)) - glabdisutil) ) / (rho+deathrate)
-! 		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(netlabincgrid(yfromaby(iaby)) + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby)) - glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(afromaby(iaby))) ) / (rho+deathrate)
-! 		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(netinc2liqgrid(yfromaby(iaby)) + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby)) - glabdisutil) + utilfnflow(housefrac*flowamnt*agrid(afromaby(iaby))) ) / (rho+deathrate)		
-		V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(netinc2liqgrid(yfromaby(iaby)) + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby)) + housefrac*flowamnt*agrid(afromaby(iaby)) - glabdisutil)) / (rho+deathrate)
+		IF(LaborSupplyGHH==1) 	lh = (netwage*ygrid(yfromaby(iaby)))**frisch
+		IF(LaborSupplySep==1) 	lh = 1.0/3.0
+		IF(NoLaborSupply==1) 	lh = 1.0
+  		ladrift = (ra + PerfectAnnuityMarkets*deathrate)*agrid(afromaby(iaby))
+		lc = netwage*ygrid(yfromaby(iaby))*lh + lumptransfer + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby))
+		llabdisutil = lh**(1.0+1.0/frisch)/(1.0+1.0/frisch)	
+		IF(NoLaborSupply==1 .or. LaborSupplyGHH==1)V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = utilfn(lc)  / (rho+deathrate)
+		IF(LaborSupplySep==1)V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(lc) - chi*llabdisutil) / (rho+deathrate)
 	END DO
 	!$OMP END PARALLEL DO
 	
@@ -90,6 +63,7 @@ DO WHILE (ii<=maxiter .and. lVdiff>Vtol)
 	ii = ii+1
 	
 END DO
+
 
 
 END SUBROUTINE IterateBellman

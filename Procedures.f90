@@ -23,6 +23,22 @@ END FUNCTION utilfn
 
 !-----------------------------------------------
 
+REAL(8) FUNCTION bondutilfn(lx)
+REAL(8), INTENT(in)	::  lx                    
+REAL(8) 	:: lb
+
+lb = max(lx,1.0e-4)
+
+IF(bondgam==1.0) THEN
+	bondutilfn = bondprefweight*log(lb)
+ELSE
+	bondutilfn = bondprefweight*(lb**(1.0-bondgam)-1.0)/(1.0-bondgam)
+END IF
+
+END FUNCTION bondutilfn
+
+!-----------------------------------------------
+
 REAL(8) FUNCTION utilfninv(lu)
 REAL(8), INTENT(in)	::  lu                 
 
@@ -52,19 +68,6 @@ utilfn1inv = (lu/prefshock)**(-1.0/gam)
 
 END FUNCTION utilfn1inv
 
-!-----------------------------------------------
-
-REAL(8) FUNCTION utilfnflow(lx)
-REAL(8), INTENT(in)	::  lx                    
-
-IF(flowgam==1.0) THEN
-	utilfnflow = log(flowcon**(-1.0/flowgam)+lx) - log(flowcon**(-1.0/flowgam))
-ELSE
-! 	utilfnflow = ((flowcon**(-1.0/flowgam)+lx)**(1.0-flowgam)-1.0)/(1.0-flowgam)
-	utilfnflow = ((flowcon**(-1.0/flowgam)+lx)**(1.0-flowgam) - flowcon**((flowgam-1.0)/flowgam))/(1.0-flowgam)
-END IF
-
-END FUNCTION utilfnflow
 
 !-----------------------------------------------
 
@@ -159,27 +162,32 @@ END IF
 IF(AdjustCostFnRatio ==1 .and. Kappa3LinearOrMax==1) adjcostfn1inv = adjcostfn1inv*(kappa3+la)
 IF(AdjustCostFnRatio ==1 .and. Kappa3LinearOrMax==2) adjcostfn1inv = adjcostfn1inv*max(kappa3,la)
 
+
+IF(adjcostfn1inv>dmax)THEN
+	IF(Display>=2)write(*,*),'high optimal d: ',adjcostfn1inv
+	adjcostfn1inv = dmax
+END IF	
 END FUNCTION adjcostfn1inv
 
 !-----------------------------------------------
 
-REAL(8) FUNCTION capitaladjcostfn(lx)
-REAL(8), INTENT(in)	::  lx                    
-
-capitaladjcostfn = capitaladjcost*0.5*(lx**2)
-
-
-END FUNCTION capitaladjcostfn
+! REAL(8) FUNCTION capitaladjcostfn(lx)
+! REAL(8), INTENT(in)	::  lx
+!
+! capitaladjcostfn = capitaladjcost*0.5*(lx**2)
+!
+!
+! END FUNCTION capitaladjcostfn
 
 !-----------------------------------------------
 
-REAL(8) FUNCTION investadjcostfn(lx)
-REAL(8), INTENT(in)	::  lx                    
-
-investadjcostfn = investadjcost*0.5*(lx**2)
-
-
-END FUNCTION investadjcostfn
+! REAL(8) FUNCTION investadjcostfn(lx)
+! REAL(8), INTENT(in)	::  lx
+!
+! investadjcostfn = investadjcost*0.5*(lx**2)
+!
+!
+! END FUNCTION investadjcostfn
 
 !-------------------------------------------------------
 
@@ -556,7 +564,6 @@ END SUBROUTINE PowerSpacedGrid
 
 !-----------------------------------------------
 
-
 SUBROUTINE LinearSpacedGrid (n,low,high,y)
 
 !gives a linear spaced between low and high
@@ -751,7 +758,8 @@ TYPE(SolutionType), INTENT(INOUT) :: soln
 
 ALLOCATE(soln%V(ngpa,ngpb,ngpy))
 ALLOCATE(soln%c(ngpa,ngpb,ngpy))
-ALLOCATE(soln%p(ngpa,ngpb,ngpy))
+ALLOCATE(soln%s(ngpa,ngpb,ngpy))
+ALLOCATE(soln%h(ngpa,ngpb,ngpy))
 ALLOCATE(soln%d(ngpa,ngpb,ngpy))
 ALLOCATE(soln%u(ngpa,ngpb,ngpy))
 ALLOCATE(soln%gjoint(ngpa,ngpb,ngpy))
@@ -763,6 +771,28 @@ ALLOCATE(soln%gmat(nab,ngpy))
 ALLOCATE(soln%A(ngpy))
 ALLOCATE(soln%B(ngpy))
 ALLOCATE(soln%AU(ngpy))
+IF (ComputeDiscountedMPC==1) THEN
+	ALLOCATE(soln%mpc(ngpa,ngpb,ngpy))
+	ALLOCATE(soln%subeff1ass(ngpa,ngpb,ngpy))
+	ALLOCATE(soln%subeff2ass(ngpa,ngpb,ngpy))
+	ALLOCATE(soln%wealtheff1ass(ngpa,ngpb,ngpy))
+	ALLOCATE(soln%wealtheff2ass(ngpa,ngpb,ngpy))
+END IF
+
+END SUBROUTINE
+
+!----------------------------------------------
+SUBROUTINE AllocateCumulativePolicyType(cum)
+
+IMPLICIT NONE
+TYPE(CumulativePolicyType), INTENT(INOUT) :: cum
+
+ALLOCATE(cum%ccum1(ngpa,ngpb,ngpy))
+ALLOCATE(cum%ccum2(ngpa,ngpb,ngpy))
+ALLOCATE(cum%ccum4(ngpa,ngpb,ngpy))
+ALLOCATE(cum%dcum1(ngpa,ngpb,ngpy))
+ALLOCATE(cum%dcum2(ngpa,ngpb,ngpy))
+ALLOCATE(cum%dcum4(ngpa,ngpb,ngpy))
 
 END SUBROUTINE
 
@@ -792,7 +822,6 @@ END DO
 
 
 END SUBROUTINE
-
 
 !----------------------------------------------
 
@@ -852,6 +881,8 @@ INTEGER, INTENT(IN)					:: n
 REAL(8), INTENT(IN) 				:: lstep
 REAL(8), INTENT(IN), DIMENSION(n)	:: xn,fn
 REAL(8), INTENT(OUT), DIMENSION(n)	:: xn1
+! REAL(8), INTENT(IN)		:: xn(:),fn(:)
+! REAL(8), INTENT(OUT)	:: xn1(:)
 
 xn1 = lstep*fn + (1.0-lstep)*xn
 
@@ -920,10 +951,14 @@ SUBROUTINE WorldBondFunction2(r,b,bss,rss,e)
 !b = f(r)
 IMPLICIT NONE
 
-REAL(8), INTENT(IN)					:: r,bss,rss,e
-REAL(8), INTENT(OUT)				:: b
+REAL(8), INTENT(IN)		:: r,bss,rss,e
+REAL(8), INTENT(OUT)	:: b
+REAL(8)					:: le
 
-b = bss + e*(r-rss)
+le = e
+IF(OppositeWorldBondFunction==1 .and. (stickytransition==.true. .or. zlbtransition==.true.)) le = -e
+
+b = bss + le*(r-rss)
 
 END SUBROUTINE
 
@@ -935,9 +970,11 @@ IMPLICIT NONE
 
 REAL(8), INTENT(IN)		:: b,bss,rss,e
 REAL(8), INTENT(OUT)	:: r
-REAL(8)					:: lminr,lmaxr
+REAL(8)					:: le
 
-r = rss + (1.0/e)*(b - bss)
+le = e
+IF(OppositeWorldBondFunction==1 .and. (stickytransition==.true. .or. zlbtransition==.true.)) le = -e
+r = rss + (1.0/le)*(b - bss)
 
 END SUBROUTINE
 
@@ -973,38 +1010,41 @@ REAL(8)		:: lg1mean,lf1mean
 n = SIZE(lf)
 
 !make it a valid distribution
-lf1 = lf/SUM(lf*ldelta)
-! lf1 = lf
+IF(SUM(lf*ldelta) > 0.0_8) THEN
+	lf1 = lf/SUM(lf*ldelta)
 
-!interpolate cumulative distribution
-DO ix = 1,n
-	CALL LinInterpCumSum1 (n,lx,lf1*ldelta,lx(ix)/ladj,lgcum(ix))
-END DO	
+	!interpolate cumulative distribution
+	DO ix = 1,n
+		CALL LinInterpCumSum1 (n,lx,lf1*ldelta,lx(ix)/ladj,lgcum(ix))
+	END DO	
 
-!check upper bound
-lgcum(n)=1.0
-lgcum = MERGE(1.0_8,lgcum,lgcum>1.0_8)
+	!check upper bound
+	lgcum(n)=1.0
+	lgcum = MERGE(1.0_8,lgcum,lgcum>1.0_8)
 
-!get marginal
-lg1(1) = lgcum(1)/ldelta(1)
-DO ix = 2,n
-	lg1(ix) = (lgcum(ix)-lgcum(ix-1)) / ldelta(ix)
-END DO	
-lg1 = MERGE(0.0_8,lg1,abs(lg1)<1.0e-12_8)
+	!get marginal
+	lg1(1) = lgcum(1)/ldelta(1)
+	DO ix = 2,n
+		lg1(ix) = (lgcum(ix)-lgcum(ix-1)) / ldelta(ix)
+	END DO	
+	lg1 = MERGE(0.0_8,lg1,abs(lg1)<1.0e-12_8)
 
-!compute means
-lg1mean = SUM(lx*ldelta*lg1)
-lf1mean = SUM(lx*ldelta*lf1)
+	!compute means
+	lg1mean = SUM(lx*ldelta*lg1)
+	lf1mean = SUM(lx*ldelta*lf1)
 
-!scale to make mean correct
-lg = ladj*lf1mean*lg1/lg1mean
+	!scale to make mean correct
+	lg = ladj*lf1mean*lg1/lg1mean
 
-!adjust mass at zero so its a valid dist
-lg(1) = (1.0-SUM(lg(2:n)*ldelta(2:n))) /ldelta(1)
+	!adjust mass at zero so its a valid dist
+	lg(1) = (1.0-SUM(lg(2:n)*ldelta(2:n))) /ldelta(1)
 
-!adjust it back to have the same sum as on input
-lg = lg*SUM(lf*ldelta)
-
+	!adjust it back to have the same sum as on input
+	lg = lg*SUM(lf*ldelta)
+ELSE
+	lg = lf
+END IF
+	
 END SUBROUTINE
 
 !----------------------------------------------

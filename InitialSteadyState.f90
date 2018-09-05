@@ -16,30 +16,43 @@ IF(EquilibriumR==0 .and. CalibrateDiscountRate==0) THEN
 	CALL Grids
 	CALL IterateBellman
 	CALL StationaryDistribution
-	IF(ComputeCumulativeMPC==1) CALL CumulativeConsumption
 	
-ELSE IF(EquilibriumR==1) THEN
+ELSE IF(EquilibriumR==1 .and. CalibrateDiscountRate==0) THEN
 	CALL SolveSteadyStateEqum
-	IF(ComputeCumulativeMPC==1) CALL CumulativeConsumption
 
 ELSE IF(CalibrateDiscountRate==1) THEN
 	converged = .false.
 	neqmiter = 1
 	OPEN(3, FILE = trim(OutputDir) // 'DiscountRateCalibration.txt', STATUS = 'replace'); CLOSE(3)
 	IF(ngpy==1 .and. deathrate==0.0) THEN !RA model no death
-		lrhoL = invlogistic(exp(-0.04_8))
-		lrhoU = invlogistic(exp(-0.015_8))
-		CALL rtbis(FnDiscountRate,lrhoL,lrhoU,1.0e-6_8,tolrho,rho)
-	ELSE
 		lrhoL = invlogistic(exp(-0.02_8))
 		lrhoU = invlogistic(exp(-0.01_8))
+ 		CALL rtbis(FnDiscountRate,lrhoL,lrhoU,1.0e-6_8,tolrho,rho)
+! 		CALL rtflsp(FnDiscountRate,lrhoL,lrhoU,1.0e-8_8,tolrho,iflag,maxiterrho)
+	ELSE
+! 		lrhoL = invlogistic(exp(-0.02_8))
+! 		lrhoU = invlogistic(exp(-0.01_8))
+		lrhoL = invlogistic(exp(-0.016_8))
+		lrhoU = invlogistic(exp(-0.014_8))
 		CALL rtflsp(FnDiscountRate,lrhoL,lrhoU,1.0e-8_8,tolrho,iflag,maxiterrho)		
 	END IF
 	converged = .true.	
-	IF(ComputeCumulativeMPC==1) CALL CumulativeConsumption
-		
+	
+	IF(EquilibriumR==1) CALL SolveSteadyStateEqum
+	
 END IF
 
+IF(ComputeCumulativeMPC==1) CALL CumulativeConsumption
+IF (ComputeDiscountedMPC==1) THEN
+	CALL DiscountedMPC
+	solnINITSS%mpc = mpc
+	solnINITSS%subeff1ass = subeff1ass
+	solnINITSS%subeff2ass = subeff2ass
+	solnINITSS%wealtheff1ass = wealtheff1ass
+	solnINITSS%wealtheff2ass = wealtheff2ass
+END IF	 
+	
+	
 DO iy = 1,ngpy
 	ALLOCATE(solnINITSS%A(iy)%val(ACSR(iy)%nz))
 	ALLOCATE(solnINITSS%A(iy)%row(ACSR(iy)%n+1))
@@ -58,7 +71,8 @@ solnINITSS%AU = AUCSR
 solnINITSS%V = V
 solnINITSS%u = u
 solnINITSS%c = c
-solnINITSS%p = p
+solnINITSS%s = s
+solnINITSS%h = h
 solnINITSS%d = d
 solnINITSS%bdot = bdot  
 
@@ -70,10 +84,11 @@ solnINITSS%gmat = gmat
 
 CALL DistributionStatistics
 equmINITSS = EquilibriumType(	ra,rborr,rcapital,wage,netwage,KYratio,KNratio,mc,rb,tfp,pi,rnom,gap,bond,capital,labor,output,investment,govexp,taxrev,govbond,worldbond,labtax,&
-								borrwedge,rho,kappafc_w,mpshock,ysig,prefshock,priceadjust,fundlev,elast,gam,fundbond,profit,dividend,divrate,intfirmbond,lumptransfer,equity,caputil,deprec,tfpadj)
-statsINITSS = DistributionStatsType(Ea,Eb,Ec,Erent,Ed,Ewage,Enetlabinc,Egrosslabinc,Einc,Ehours,Enw,FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
-									EbN,EbP,Eadjcost,Efsp,PERCa,PERCb,PERCnw,PERCc,PERCinc,GINIa,GINIb,GINInw,GINIc,GINIinc, &
-									Ea_nwQ,Eb_nwQ,Ec_nwQ,Einc_nwQ,Ea_incQ,Eb_incQ,Ec_incQ,Einc_incQ,Ec_bN,Ec_b0close,Ec_b0far)
+								borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock,priceadjust,fundlev,elast,gam,fundbond,profit,dividend,divrate,lumptransfer,equity,caputil,deprec,tfpadj,&
+								illassetdrop,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,ygrid)
+statsINITSS = DistributionStatsType(Ea,Eb,Ec,Elabor,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Enw,FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
+									EbN,EbP,Eadjcost,PERCa,PERCb,PERCnw,PERCc,PERCinc,GINIa,GINIb,GINInw,GINIc,GINIinc, &
+									Ea_nwQ,Eb_nwQ,Ec_nwQ,Einc_nwQ,Ea_incQ,Eb_incQ,Ec_incQ,Einc_incQ,Ec_bN,Ec_b0close,Ec_b0far,Ec_nwQ_add)
 
 initialSS = .false.
 

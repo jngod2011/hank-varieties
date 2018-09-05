@@ -7,6 +7,8 @@ USE Procedures
 IMPLICIT NONE
 INTEGER		:: it,it1
 CHARACTER	:: IRFDir*20
+REAL(8) 	:: linitchi,lminygrid
+REAL(8), DIMENSION(Ttransition) 	:: lchi,lmpshock1,lmpshock2
 
 !allocate arrays
 CALL AllocateArrays
@@ -14,19 +16,33 @@ CALL AllocateArrays
 flextransition = .false.
 zlbtransition = .false.
 stickytransition = .false.
-fsptransition = .false.
+monetaryshock = .false.
+forwardguide = .false.
+prodispshock = .false.
+
+! nendtrans = min(50,Ttransition)
+nendtrans = min(10,Ttransition)
 
 !set up deltatransvec
-CALL PowerSpacedGrid (Ttransition,deltatransparam,deltatransmin,deltatransmax,deltatransvec)
+IF (TransitionTimeStepType==1) THEN
+	CALL PowerSpacedGrid (Ttransition,deltatransparam,deltatransmin,deltatransmax,deltatransvec)
 
-nendtrans = min(50,Ttransition)
-cumdeltatrans(1) = deltatransvec(1)
-DO it = 2,Ttransition
-	cumdeltatrans(it) = cumdeltatrans(it-1) + deltatransvec(it)
-END DO
+	cumdeltatrans(1) = deltatransvec(1)
+	DO it = 2,Ttransition
+		cumdeltatrans(it) = cumdeltatrans(it-1) + deltatransvec(it)
+	END DO
+ELSEIF (TransitionTimeStepType==2) THEN
+	cumdeltatrans(1) = 1.0/real(Ttransition+1) 
+	DO it = 2,Ttransition
+		cumdeltatrans(it) = cumdeltatrans(it-1) + 1.0/real(Ttransition+1) 
+	END DO
+	
+	cumdeltatrans = (cumdeltatrans/(1.0-cumdeltatrans)) / deltatransnu
+	deltatransvec(1) = cumdeltatrans(1)
+	deltatransvec(2:Ttransition) = cumdeltatrans(2:Ttransition) - cumdeltatrans(1:Ttransition-1)
+
+END IF
 OPEN(3, FILE = trim(OutputDir) // 'deltatransvec.txt', STATUS = 'replace'); CALL WriteMatrix(3,Ttransition,1,deltatransvec)
-
-IF(DoFiscalStimulus==1) CALL SetupFiscalStimulus
 
 !TFP shock
 IF(IncludeTFPShock==1) THEN
@@ -43,45 +59,64 @@ IF(IncludeTFPShock==1) THEN
 	CALL IRFSequence(IRFDir)
 END IF
 
-!News shock: this needs to be fixed up because of the way that deltatransvec works - it=1 is NOT 1 quarter in (see forward guidance shock)
+!News shock
 IF (IncludeNewsShock==1) THEN
 
 	IF(Display>=1) write(*,*)'Solving for news shock IRF'
 	
 	equmTRANS(:) = equmINITSS	
-	equmTRANS(1:NewsShockQtrs)%tfp = equmINITSS%tfp
-	equmTRANS(NewsShockQtrs+1)%tfp = equmINITSS%tfp * exp(NewsShockSize)
-	DO it = NewsShockQtrs+2,Ttransition-nendtrans
+	it1 = MINLOC(cumdeltatrans, 1, MASK = cumdeltatrans>=NewsShockQtrs)
+	equmTRANS(1:it1-1)%tfp = equmINITSS%tfp
+	equmTRANS(it1)%tfp = equmINITSS%tfp * exp(NewsShockSize)
+	DO it = it1+1,Ttransition-nendtrans
 		equmTRANS(it)%tfp = equmTRANS(it-1)%tfp ** (NewsShockPers**deltatransvec(it-1))
 	END DO	
 	equmTRANS(Ttransition-nendtrans+1:Ttransition)%tfp = equmINITSS%tfp
 
 	IRFDir = "News"
 	CALL IRFSequence(IRFDir)
-
+	
 END IF
 
-!Kappa fc shock
-IF(IncludeKappafcShock==1) THEN
+!Kappa 0 shock
+IF(IncludeKappa0Shock==1) THEN
 	IF(Display>=1) write(*,*)'Solving for fixed cost shock IRF'	
 	
 	equmTRANS(:) = equmINITSS		
-	equmTRANS(1)%kappafc_w = equmINITSS%kappafc_w * exp(KappafcShockSize)
+	equmTRANS(1)%kappa0_w = equmINITSS%kappa0_w  + Kappa0ShockSize
 	DO it = 2,Ttransition-nendtrans
-		equmTRANS(it)%kappafc_w =(equmINITSS%kappafc_w **(1.0-KappafcShockPers**deltatransvec(it-1))) * (equmTRANS(it-1)%kappafc_w ** (KappafcShockPers**deltatransvec(it-1)))
-		
+		equmTRANS(it)%kappa0_w = equmINITSS%kappa0_w *(1.0-Kappa0ShockPers**deltatransvec(it-1)) + equmTRANS(it-1)%kappa0_w * (Kappa0ShockPers**deltatransvec(it-1))
 	END DO	
-	equmTRANS(Ttransition-nendtrans+1:Ttransition)%kappafc_w = equmINITSS%kappafc_w
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%kappa0_w = equmINITSS%kappa0_w
 
-	IRFDir = "Kappafc"
+	IRFDir = "Kappa0"
+	CALL IRFSequence(IRFDir)
+
+END IF
+
+!Kappa 1 shock
+IF(IncludeKappa1Shock==1) THEN
+	IF(Display>=1) write(*,*)'Solving for Adjustment cost shock IRF'	
+	
+	equmTRANS(:) = equmINITSS		
+	linitchi = (equmINITSS%kappa1_w**(-kappa2_w)) / (1.0+kappa2_w)
+	lchi(1) = linitchi * exp(Kappa1ShockSize)
+	DO it = 2,Ttransition-nendtrans
+! 		lchi(it) = linitchi *(1.0-Kappa1ShockPers**deltatransvec(it-1)) + lchi(it-1) * (Kappa1ShockPers**deltatransvec(it-1))
+		lchi(it) = lchi(it-1) ** (Kappa1ShockPers**deltatransvec(it-1))		
+	END DO	
+	lchi(Ttransition-nendtrans+1:Ttransition) = linitchi
+	equmTRANS(:)%kappa1_w = ((1.0+kappa2_w)*lchi(:)) ** (-1.0/kappa2_w)
+	
+	IRFDir = "Kappa1"
 	CALL IRFSequence(IRFDir)
 
 END IF
 
 !Monetary policy shock
 IF(IncludeMonetaryShock==1) THEN
+	monetaryshock =.true.
 	IF(Display>=1) write(*,*)'Solving for monetary policy shock IRF'	
-	irfpointer => irfstruct(0)
 
 	equmTRANS(:) = equmINITSS		
 	equmTRANS(1)%mpshock = equmINITSS%mpshock + MonetaryShockSize
@@ -93,14 +128,15 @@ IF(IncludeMonetaryShock==1) THEN
 
 	IRFDir = "Monetary"
 	CALL IRFSequence(IRFDir)
+	monetaryshock =.false.
 
 END IF
 
 !Forward Guidance shock
 IF(IncludeForwardGuideShock==1) THEN
 	forwardguide = .true.
+	monetaryshock= .true.
 	IF(Display>=1) write(*,*)'Solving for forward guidance shock IRF'	
-	irfpointer => irfstruct(0)
 
 	equmTRANS(:) = equmINITSS
 	it1 = MINLOC(cumdeltatrans, 1, MASK = cumdeltatrans>=ForwardGuideShockQtrs)
@@ -115,12 +151,36 @@ IF(IncludeForwardGuideShock==1) THEN
 	IRFDir = "ForwardGuide"
 	CALL IRFSequence(IRFDir)
 	forwardguide = .false.
+	monetaryshock =.false.
 
 END IF
 
+!Taylor rule path shock
+IF(IncludeTaylorPathShock==1) THEN
+	monetaryshock =.true.
+	IF(Display>=1) write(*,*)'Solving for taylor rule path shock IRF'	
+
+	equmTRANS(:) = equmINITSS		
+
+	lmpshock1(1) = TaylorPathShockSize1
+	lmpshock2(1) = TaylorPathShockSize2
+	DO it = 2,Ttransition-nendtrans
+		lmpshock1(it) = lmpshock1(it-1) * (TaylorPathShockPers1**deltatransvec(it-1))
+		lmpshock2(it) = lmpshock2(it-1) * (TaylorPathShockPers2**deltatransvec(it-1))
+
+	END DO	
+	
+	lmpshock1(Ttransition-nendtrans+1:Ttransition) = 0.0
+	lmpshock2(Ttransition-nendtrans+1:Ttransition) = 0.0
+
+	equmTRANS(:)%mpshock = equmINITSS%mpshock + lmpshock1 + lmpshock2
 
 
-! StDevYShockSize
+	IRFDir = "TaylorPath"
+	CALL IRFSequence(IRFDir)
+	monetaryshock =.false.
+
+END IF
 
 !Preference shock
 IF(IncludePrefShock==1) THEN
@@ -207,5 +267,106 @@ IF(IncludeBorrWedgeShock==1) THEN
 
 END IF
 
+!Government Expenditure Shock
+IF(IncludeGovExpShock==1) THEN
+	IF(Display>=1) write(*,*)'Solving for govt expenditure shock IRF'	
+	equmTRANS(:) = equmINITSS	
+	
+	equmTRANS(1)%govshock = equmINITSS%govshock * exp(GovExpShockSize)
+	DO it = 2,Ttransition-nendtrans
+		equmTRANS(it)%govshock = equmTRANS(it-1)%govshock ** (GovExpShockPers**deltatransvec(it-1))
+	END DO	
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%govshock = equmINITSS%govshock
+
+	IRFDir = "GovExp"
+	CALL IRFSequence(IRFDir)
+END IF
+
+!Lump Transfer Shock
+IF(IncludeTransferShock==1) THEN
+	IF(Display>=1) write(*,*)'Solving for lump transfer shock IRF'	
+	equmTRANS(:) = equmINITSS	
+	
+	equmTRANS(1)%transfershock = equmINITSS%transfershock * exp(TransferShockSize)
+	DO it = 2,Ttransition-nendtrans
+		equmTRANS(it)%transfershock = equmTRANS(it-1)%transfershock ** (TransferShockPers**deltatransvec(it-1))
+	END DO	
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%transfershock = equmINITSS%transfershock
+
+	IRFDir = "Transfer"
+	CALL IRFSequence(IRFDir)
+END IF
+
+!Financial wedge shock
+IF(IncludeFinWedgeShock==1) THEN
+	IF(Display>=1) write(*,*)'Solving for Financial wedge shock IRF'	
+
+	equmTRANS(:) = equmINITSS		
+	equmTRANS(1)%finwedge = equmINITSS%finwedge + FinWedgeShockSize
+	DO it = 2,Ttransition-nendtrans
+		equmTRANS(it)%finwedge = equmINITSS%finwedge *(1.0-FinWedgeShockPers**deltatransvec(it-1)) + equmTRANS(it-1)%finwedge * (FinWedgeShockPers**deltatransvec(it-1))
+	END DO	
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%finwedge = equmINITSS%finwedge
+
+	IRFDir = "FinWedge"
+	CALL IRFSequence(IRFDir)
+
+END IF
+
+!Labor wedge shock
+IF(IncludeLabWedgeShock==1) THEN
+	IF(Display>=1) write(*,*)'Solving for Labor wedge shock IRF'	
+	equmTRANS(:) = equmINITSS	
+	
+	equmTRANS(1)%labwedge = equmINITSS%labwedge * exp(LabWedgeShockSize)
+	DO it = 2,Ttransition-nendtrans
+		equmTRANS(it)%labwedge = equmTRANS(it-1)%labwedge ** (LabWedgeShockPers**deltatransvec(it-1))
+	END DO	
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%labwedge = equmINITSS%labwedge
+
+	IRFDir = "LabWedge"
+	CALL IRFSequence(IRFDir)
+END IF
+
+!Productivity dispersion shock
+IF(IncludeProdDispShock==1) THEN
+	prodispshock = .true.
+	IF(Display>=1) write(*,*)'Solving for producitivity dispersion shock IRF'	
+	equmTRANS(:) = equmINITSS	
+	
+	equmTRANS(1)%prodgridscale = equmINITSS%prodgridscale * exp(ProdDispShockSize)
+	DO it = 2,Ttransition-nendtrans
+		equmTRANS(it)%prodgridscale = equmTRANS(it-1)%prodgridscale ** (ProdDispShockPers**deltatransvec(it-1))
+	END DO	
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%prodgridscale = equmINITSS%prodgridscale
+
+	lminygrid = 1.0e-8_8
+	equmTRANS(1)%ygrid(:) = equmTRANS(1)%prodgridscale * equmINITSS%ygrid(:) - meanlabeff*(equmTRANS(1)%prodgridscale-1)
+	equmTRANS(1)%ygrid(:) = max(equmTRANS(1)%ygrid(:),lminygrid)
+	DO it = 2,Ttransition
+		equmTRANS(it)%ygrid(:) = equmTRANS(it)%prodgridscale * equmINITSS%ygrid(:) - meanlabeff*(equmTRANS(it)%prodgridscale-1)
+		equmTRANS(it)%ygrid(:) = max(equmTRANS(it)%ygrid(:),lminygrid)
+	END DO	
+
+
+	IRFDir = "ProdDisp"
+	CALL IRFSequence(IRFDir)
+	prodispshock = .false.
+END IF
+
+!Productivity persistence shock
+IF(IncludeProdPersShock==1) THEN
+	IF(Display>=1) write(*,*)'Solving for producitivity persistence shock IRF'	
+	equmTRANS(:) = equmINITSS	
+	
+	equmTRANS(1)%prodmarkovscale = equmINITSS%prodmarkovscale * exp(ProdPersShockSize)
+	DO it = 2,Ttransition-nendtrans
+		equmTRANS(it)%prodmarkovscale = equmTRANS(it-1)%prodmarkovscale ** (ProdPersShockPers**deltatransvec(it-1))
+	END DO	
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%prodmarkovscale = equmINITSS%prodmarkovscale
+
+	IRFDir = "ProdPers"
+	CALL IRFSequence(IRFDir)
+END IF
 
 END SUBROUTINE ImpulseResponses

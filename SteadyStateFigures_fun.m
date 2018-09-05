@@ -11,6 +11,7 @@ Experiment              = options.Experiment;
 MakeAllFigs             = options.MakeAllFigs;
 Save                    = options.Save;
 plotmax                 = options.plotmax;
+datagrosslabinc         = options.datagrosslabinc;
 
 %% Create directories for saving and copy base .tex file over
 
@@ -41,21 +42,32 @@ temp = importdata([BaseOutputDir '/InitialSteadyStateParameters.txt']);
 for i = 1:size(temp.data,1)
     initss.(temp.textdata{i}) = temp.data(i,1);
 end
+initss.priceadjust = 0;
+
 annlabinc = initss.Egrosslabinc.*4;
 annoutput = initss.output.*4;
 
 V           = zeros(ngpa,ngpb,ngpy);
 dep         = zeros(ngpa,ngpb,ngpy);
 con         = zeros(ngpa,ngpb,ngpy);
+hour        = zeros(ngpa,ngpb,ngpy);
+ccum1       = zeros(ngpa,ngpb,ngpy);
+ccum2       = zeros(ngpa,ngpb,ngpy);
+ccum4       = zeros(ngpa,ngpb,ngpy);
 bdot        = zeros(ngpa,ngpb,ngpy);
 gjoint      = zeros(ngpa,ngpb,ngpy);
 for iy = 1:ngpy
     V(:,:,iy)       = load([BaseOutputDir '/INITSS/V_INITSS_y' int2str(iy) '.txt']);
     dep(:,:,iy)     = load([BaseOutputDir '/INITSS/dep_INITSS_y' int2str(iy) '.txt']);
     con(:,:,iy)     = load([BaseOutputDir '/INITSS/con_INITSS_y' int2str(iy) '.txt']);
+    hour(:,:,iy)     = load([BaseOutputDir '/INITSS/hour_INITSS_y' int2str(iy) '.txt']);
     bdot(:,:,iy)    = load([BaseOutputDir '/INITSS/bdot_INITSS_y' int2str(iy) '.txt']);
     ccum1(:,:,iy)   = load([BaseOutputDir '/INITSS/ccum1_INITSS_y' int2str(iy) '.txt']);
+    ccum2(:,:,iy)   = load([BaseOutputDir '/INITSS/ccum2_INITSS_y' int2str(iy) '.txt']);
     ccum4(:,:,iy)   = load([BaseOutputDir '/INITSS/ccum4_INITSS_y' int2str(iy) '.txt']);
+    dcum1(:,:,iy)   = load([BaseOutputDir '/INITSS/dcum1_INITSS_y' int2str(iy) '.txt']);
+    dcum2(:,:,iy)   = load([BaseOutputDir '/INITSS/dcum2_INITSS_y' int2str(iy) '.txt']);
+    dcum4(:,:,iy)   = load([BaseOutputDir '/INITSS/dcum4_INITSS_y' int2str(iy) '.txt']);
     gjoint(:,:,iy)  = load([BaseOutputDir '/INITSS/gjoint_INITSS_y' int2str(iy) '.txt']);    
 end    
 gamarg          = load([BaseOutputDir '/INITSS/gamarg_INITSS.txt']);    
@@ -65,11 +77,22 @@ gbmargallinc    = sum(gbmarg,2);
 gjointallinc    = sum(gjoint,3);
 
 %%
-PERCa = load([BaseOutputDir '/INITSS/PERCa.txt']);    
-PERCb = load([BaseOutputDir '/INITSS/PERCb.txt']);    
-PERCc = load([BaseOutputDir '/INITSS/PERCc.txt']);    
-PERCinc = load([BaseOutputDir '/INITSS/PERCinc.txt']);    
-PERCnw  = load([BaseOutputDir '/INITSS/PERCnw.txt']);    
+initss.PERCa = load([BaseOutputDir '/INITSS/PERCa.txt']);    
+initss.PERCb = load([BaseOutputDir '/INITSS/PERCb.txt']);    
+initss.PERCc = load([BaseOutputDir '/INITSS/PERCc.txt']);    
+initss.PERCinc = load([BaseOutputDir '/INITSS/PERCinc.txt']);    
+initss.PERCnw  = load([BaseOutputDir '/INITSS/PERCnw.txt']);    
+
+initss.Ea_incQ = load([BaseOutputDir '/INITSS/Ea_incQ.txt']);    
+initss.Ea_nwQ = load([BaseOutputDir '/INITSS/Ea_nwQ.txt']);    
+initss.Eb_incQ = load([BaseOutputDir '/INITSS/Eb_incQ.txt']);    
+initss.Eb_nwQ = load([BaseOutputDir '/INITSS/Eb_nwQ.txt']);    
+initss.Ec_incQ = load([BaseOutputDir '/INITSS/Ec_incQ.txt']);    
+initss.Ec_nwQ = load([BaseOutputDir '/INITSS/Ec_nwQ.txt']);    
+initss.Einc_incQ = load([BaseOutputDir '/INITSS/Einc_incQ.txt']);    
+initss.Einc_nwQ = load([BaseOutputDir '/INITSS/Einc_nwQ.txt']);    
+initss.Ec_nwQ_add = load([BaseOutputDir '/INITSS/Ec_nwQ_add.txt']);    
+
 %%
 ydist       = sum(gbmarg.*(bdelta*ones(1,ngpy)))';
 Eb          = sum(gbmarg.*(bgrid.*bdelta*ones(1,ngpy)))'./ydist;
@@ -106,6 +129,8 @@ for i = 1:length(dephistpoints)
     dep_cumdist(i) = sum(sum(sum(gjoint(dep<=dephistpoints(i)).* abydelta(dep<=dephistpoints(i)) )));
 end
 dephist         = diff([0; dep_cumdist]);
+
+
 
 %%
 mpc         = (con(:,2:ngpb,:) - con(:,1:ngpb-1,:))./ repmat(dbgrid',[ngpa,1,ngpy]);
@@ -289,7 +314,8 @@ adjcostfn_w     = @(d) initss.kappafc_w.*(abs(d)>0) + initss.kappa0_w.*abs(d) + 
 adjcostfn_d     = @(d) initss.kappafc_d.*(abs(d)>0) + initss.kappa0_d.*abs(d) + (abs(d/initss.kappa1_d).^(1+initss.kappa2_d)) .*initss.kappa1_d./ (1+initss.kappa2_d);
 adjcostfn       = @(d) (d<=0).*adjcostfn_w(d) + (d>=0).*adjcostfn_d(d);
 
-figure;
+H = figure;
+set(gcf,'Visible','off');
 subplot(1,2,1);
 hold on;
 f1 = ezplot(@(d)adjcostfn(d.*initss.output)./initss.output,[-0.2 0.2]);
@@ -321,6 +347,7 @@ if Save==1
     print('-depsc',[SaveDir '/adj_cost_fn']);
 %     print('-dpdf',[SaveDir '/adj_cost_fn']);
 end
+delete(H);
 
 
 %% WEALTH DISTRIBUTION
@@ -332,7 +359,7 @@ f   = bar(bgrid./annoutput, bdelta.*gbmargallinc,'histc');
 sh  = findall(gcf,'marker','*'); delete(sh);
 set(f,'FaceColor','blue','EdgeColor','red');
 grid;
-xlim([-0.1 2.5]);
+% xlim([-0.1 2.5]);
 title('Liquid wealth distribution','FontSize',16,'interpreter','latex');
 set(gca,'FontSize',14) ;
 
@@ -348,7 +375,7 @@ f   = bar(agrid./annoutput, adelta.*gamargallinc,'histc');
 sh  = findall(gcf,'marker','*'); delete(sh);
 set(f,'FaceColor','blue','EdgeColor','red');
 grid;
-xlim([0 10]);
+% xlim([0 10]);
 title('Illiquid wealth distribution','FontSize',16,'interpreter','latex');
 set(gca,'FontSize',14) ;
 
@@ -366,8 +393,8 @@ ylabel('Illiquid Wealth','FontSize',16, 'interpreter','latex');
 grid on;
 % xlim([bgrid(1)./annlabinc bgrid(ngpb)./annlabinc]);
 % ylim([agrid(1)./annlabinc agrid(ngpa)./annlabinc]);
-xlim([-1 5]);
-ylim([0 30]);
+% xlim([-1 5]);
+% ylim([0 30]);
 delete(H);
 %% Overall theoretical mpc distribution
 H = figure;
@@ -455,7 +482,7 @@ if Save==1
 end
 delete(H);
 %% JOINT DISTRIBUTION OF MPCs
-ipoint   = 5;
+ipoint   = options.ipoint;
 bplotmax = 1;
 bplotmin = bgrid(1)./annlabinc;
 aplotmax = 30;
@@ -531,7 +558,7 @@ delete(H);
 
 %% POLICY FUNCTIONS
 
-ipoint      = 9;
+ipoint      = options.ipoint;
 bplotmax    = 5;
 bplotmin    = bgrid(1)./annlabinc;
 aplotmax    = 20;
@@ -652,7 +679,7 @@ end
 delete(H);
 %% 3D POLICY FUNCTIONS
 
-ipoint = 5;
+ipoint = options.ipoint;
 
 %% Consumption Policy (3D)
 H = figure;
@@ -724,5 +751,9 @@ copyfile(sprintf('%s/FIGURES_SS.pdf',SaveDir),PdfDir);
 cd(PdfDir);
 movefile('FIGURES_SS.pdf',sprintf('SteadyState.pdf'));
 cd(BaseDir);
+
+%% Save the workspace
+save(['Steadystate_workspace.mat']);
+
 
 

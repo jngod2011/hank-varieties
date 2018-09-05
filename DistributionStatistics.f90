@@ -7,12 +7,12 @@ USE Procedures
 IMPLICIT NONE
 
 INTEGER			:: ia,ib,iy,iaby,ip,iab
-REAL(8), DIMENSION(naby) :: la,lb,lc,lrent,ld,lwage,lnetlabinc,lgrosslabinc,ladelta,lbdelta,lhours,ladjcost,lfsp,lgrossinc,lnw
+REAL(8), DIMENSION(naby) :: la,lb,lc,ld,lwage,lnetlabinc,lgrosslabinc,ladelta,lbdelta,lhours,ladjcost,lgrossinc,lnw,llabor,lgrossprofinc,lnetprofinc
 REAL(8)	:: lbmargdist(ngpb),lamargdist(ngpa),lbmargcum(ngpb),lamargcum(ngpa),lpvec(11),linterp1,linterp2
 INTEGER, DIMENSION(nab)		:: ordernw
-REAL(8), DIMENSION(nab)		:: lnwmargdist,lnwmargcum,lnwgrid,lnwdelta,lnw_a,lnw_b,lnw_c,lnw_inc
+REAL(8), DIMENSION(nab)		:: lnwmargdist,lnwmargcum,lnwgrid,lnwdelta,lnw_a,lnw_b,lnw_c,lnw_inc,lnw_h
 REAL(8), DIMENSION(naby)	:: lcmargdist,lcmargcum,lcgrid,lcdelta,lmargdist
-REAL(8), DIMENSION(naby)	:: lincgrid,lincmargdist,lincdelta,lincmargcum,linc_a,linc_b,linc_c,linc_nw
+REAL(8), DIMENSION(naby)	:: lincgrid,lincmargdist,lincdelta,lincmargcum,linc_a,linc_b,linc_c,linc_nw,linc_h
 INTEGER, DIMENSION(naby)	:: orderinc
 
 
@@ -29,19 +29,22 @@ DO iaby = 1,naby
 	lb(iaby) = bgrid(ib)
 	lnw(iaby) = agrid(ia)+ bgrid(ib)
 	lc(iaby) = c(ia,ib,iy)
-	lrent(iaby) = p(ia,ib,iy)
 	ld(iaby) = d(ia,ib,iy)
 	ladjcost(iaby) = adjcostfn(ld(iaby),la(iaby))
 	lwage(iaby) = ygrid(iy)*wage
-	lhours(iaby) = lgrid(iy)
-	lnetlabinc(iaby) = netlabincgrid(iy)
-	lgrosslabinc(iaby) = grosslabincgrid(iy)
-	lgrossinc(iaby) = grosslabincgrid(iy) + (rb+PerfectAnnuityMarkets*deathrate)*max(bgrid(ib),0.0) + (rborr+PerfectAnnuityMarkets*deathrate)*min(bgrid(ib),0.0) + (ra+PerfectAnnuityMarkets*deathrate)*(1.0-housefrac)*agrid(ia)
+	lhours(iaby) = h(ia,ib,iy)
+	llabor(iaby) = h(ia,ib,iy)*ygrid(iy)
+	lgrosslabinc(iaby) = lhours(iaby)*ygrid(iy)*wage
+	lnetlabinc(iaby) = lhours(iaby)*ygrid(iy)*netwage + lumptransfer
+	IF(DistributeProfitsInProportion==0) lgrossprofinc(iaby) = 0.0 
+	IF(DistributeProfitsInProportion==1) lgrossprofinc(iaby) = (1.0-profdistfrac)*profit*profsharegrid(iy)
+	IF(TaxHHProfitIncome==0) lnetprofinc(iaby) = lgrossprofinc(iaby)
+	IF(TaxHHProfitIncome==1) lnetprofinc(iaby) = (1.0-labtax)*lgrossprofinc(iaby)
+	
+	lgrossinc(iaby) = lgrosslabinc(iaby) + lgrossprofinc(iaby) + (rb-finwedge+PerfectAnnuityMarkets*deathrate)*max(bgrid(ib),0.0) + (rborr+PerfectAnnuityMarkets*deathrate)*min(bgrid(ib),0.0) + (ra+PerfectAnnuityMarkets*deathrate)*agrid(ia)
 	ladelta(iaby) = adelta(ia)
 	lbdelta(iaby) = bdelta(ib)
 	lmargdist(iaby) = gmat(iab,iy)*abydelta(iaby)
-	IF(fsptransition==.true.) lfsp(iaby) = fspamount(ia,ib,iy)
-	IF(fsptransition==.false.) lfsp(iaby) = 0.0
 	
 	IF(iy==1) lnwgrid(iab) = agrid(ia) + bgrid(ib)
 	IF(iy==1) ordernw(iab) = iab
@@ -73,11 +76,13 @@ IF ((iteratingtransition==.false.) .and. (calibrating==.false.) .and. (exploring
 			lnw_a(iab)  = SUM(la*lmargdist, MASK = abfromaby == ordernw(iab)) /  SUM(lmargdist, MASK = abfromaby == ordernw(iab))
 			lnw_b(iab)  = SUM(lb*lmargdist, MASK = abfromaby == ordernw(iab)) /  SUM(lmargdist, MASK = abfromaby == ordernw(iab))
 			lnw_c(iab)  = SUM(lc*lmargdist, MASK = abfromaby == ordernw(iab)) /  SUM(lmargdist, MASK = abfromaby == ordernw(iab))
+			lnw_h(iab)  = SUM(lhours*lmargdist, MASK = abfromaby == ordernw(iab)) /  SUM(lmargdist, MASK = abfromaby == ordernw(iab))
 			lnw_inc(iab)  = SUM(lgrossinc*lmargdist, MASK = abfromaby == ordernw(iab)) /  SUM(lmargdist, MASK = abfromaby == ordernw(iab))
 		ELSE
 			lnw_a(iab)  = 0.0
 			lnw_b(iab)  = 0.0
 			lnw_c(iab)  = 0.0
+			lnw_h(iab)  = 0.0
 			lnw_inc(iab)  = 0.0
 		END IF
 	END DO
@@ -104,6 +109,7 @@ IF ((iteratingtransition==.false.) .and. (calibrating==.false.) .and. (exploring
 	linc_a = la(orderinc)
 	linc_b = lb(orderinc)
 	linc_c = lc(orderinc)
+	linc_h = lhours(orderinc)
 	linc_nw = lnw(orderinc)
 	CALL CUMSUM(lincmargdist*lincdelta,lincmargcum)
 	
@@ -111,19 +117,20 @@ END IF
 
 !means
 Ehours = SUM(lhours*gvec*ladelta*lbdelta)
+Elabor = SUM(llabor*gvec*ladelta*lbdelta)
 Ewage = SUM(lwage*gvec*ladelta*lbdelta)
 Enetlabinc = SUM(lnetlabinc*gvec*ladelta*lbdelta)
 Egrosslabinc = SUM(lgrosslabinc*gvec*ladelta*lbdelta)
+Enetprofinc = SUM(lnetprofinc*gvec*ladelta*lbdelta)
+Egrossprofinc = SUM(lgrossprofinc*gvec*ladelta*lbdelta)
 Einc = SUM(lincgrid*lincmargdist*lincdelta)
 Ea = SUM(la*gvec*ladelta*lbdelta)
 Eb = SUM(lb*gvec*ladelta*lbdelta)
 Ec = SUM(lc*gvec*ladelta*lbdelta)
-Erent = SUM(lrent*gvec*ladelta*lbdelta)
 Ed = SUM(ld*gvec*ladelta*lbdelta)
 Eadjcost = SUM(ladjcost*gvec*ladelta*lbdelta)
 EbP = SUM(lb*gvec*ladelta*lbdelta,MASK= lb>0)
 EbN = SUM(lb*gvec*ladelta*lbdelta,MASK= lb<0)
-Efsp = SUM(lfsp*gvec*ladelta*lbdelta)
 Enw = SUM(lnwgrid*lnwmargdist*lnwdelta)
 
 !frac at exactly zero
@@ -155,9 +162,8 @@ IF (iteratingtransition==.false.) THEN !since we don't store gabcum
 END IF
 
 FRACbN = SUM(MERGE(1.0_8,0.0_8,lb<-1.0e-12)*gvec*ladelta*lbdelta)
-
-Ec_bN = SUM(lc*gvec*ladelta*lbdelta, MASK = lb<-1.0e-8)/FRACbN
-Ec_b0close = SUM(lc*gvec*ladelta*lbdelta, MASK = lb>-1.0e-8 .and. lb<defnbclose*Egrosslabinc)/FRACb0close
+IF(FRACbN>0.0) Ec_bN = SUM(lc*gvec*ladelta*lbdelta, MASK = lb<-1.0e-8)/FRACbN
+IF(FRACb0close>0.0)Ec_b0close = SUM(lc*gvec*ladelta*lbdelta, MASK = lb>-1.0e-8 .and. lb<defnbclose*Egrosslabinc)/FRACb0close
 Ec_b0far = SUM(lc*gvec*ladelta*lbdelta, MASK = lb>=defnbclose*Egrosslabinc)/(1.0-FRACb0close-FRACbN)
 
 !percentiles: use cumulative marginal distributions
@@ -214,7 +220,8 @@ IF ((iteratingtransition==.false.) .and. (calibrating==.false.) .and. (exploring
 	END DO
 
 	!gini coefficient
-	GINIa = SUM(lamargcum*(1.0-lamargcum)*adelta) / Ea
+	IF(Ea>0.0) GINIa = SUM(lamargcum*(1.0-lamargcum)*adelta) / Ea
+	IF(Ea==0.0) GINIa = 0.0
 	GINIb = SUM(lbmargcum*(1.0-lbmargcum)*bdelta) / Eb
 	GINInw = SUM(lnwmargcum*(1.0-lnwmargcum)*lnwdelta) / Enw
 	GINIc = SUM(lcmargcum*(1.0-lcmargcum)*lcdelta) / Ec
@@ -222,7 +229,7 @@ IF ((iteratingtransition==.false.) .and. (calibrating==.false.) .and. (exploring
 
 	!in transition use groupings based on steady sate	
 	
-	!statistics conditional on quartile of net worth distributions
+	!statistics conditional on quartile of net worth distributions	
 	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_a,lnwdelta,lnwgrid(1),PERCnw(5),Ea_nwQ(1))
 	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_a,lnwdelta,PERCnw(5),PERCnw(6),Ea_nwQ(2))
 	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_a,lnwdelta,PERCnw(6),PERCnw(7),Ea_nwQ(3))
@@ -263,6 +270,21 @@ IF ((iteratingtransition==.false.) .and. (calibrating==.false.) .and. (exploring
 	CALL ConditionalExpectation (naby,lincgrid,lincmargdist,lincgrid,lincdelta,PERCinc(5),PERCinc(6),Einc_incQ(2))
 	CALL ConditionalExpectation (naby,lincgrid,lincmargdist,lincgrid,lincdelta,PERCinc(6),PERCinc(7),Einc_incQ(3))
 	CALL ConditionalExpectation (naby,lincgrid,lincmargdist,lincgrid,lincdelta,PERCinc(7),lincgrid(naby),Einc_incQ(4))
+	
+	!additional consumption statistics conditionl on rang of net worth distribuion;
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,lnwgrid(1),PERCnw(11),Ec_nwQ_add(1)) !bottom 99%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,lnwgrid(1),PERCnw(9),Ec_nwQ_add(2)) !bottom 95%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,lnwgrid(1),PERCnw(8),Ec_nwQ_add(3)) !bottom 90%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,lnwgrid(1),PERCnw(4),Ec_nwQ_add(4)) !bottom 10%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,lnwgrid(1),PERCnw(3),Ec_nwQ_add(5)) !bottom 5%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,lnwgrid(1),PERCnw(1),Ec_nwQ_add(6)) !bottom 1%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,PERCnw(11),lnwgrid(nab),Ec_nwQ_add(7)) !top 1%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,PERCnw(9),lnwgrid(nab),Ec_nwQ_add(8)) !top 5%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,PERCnw(8),lnwgrid(nab),Ec_nwQ_add(9)) !top 10%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,PERCnw(4),lnwgrid(nab),Ec_nwQ_add(10)) !top 90%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,PERCnw(3),lnwgrid(nab),Ec_nwQ_add(11)) !top 95%
+	CALL ConditionalExpectation (nab,lnwgrid,lnwmargdist,lnw_c,lnwdelta,PERCnw(1),lnwgrid(nab),Ec_nwQ_add(12)) !top 99%
+
 
 END IF
 

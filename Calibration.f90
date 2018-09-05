@@ -13,7 +13,6 @@ REAL(8), EXTERNAL 		:: FnDiscountRate
 
 calibrating = .true.
 
-
 IF(CalibrateRhoAtInitialGuess==1) THEN
 	IF (Display>=1) write(*,*) "Calibrating rho at initial steady state"
 	converged = .false.
@@ -24,6 +23,7 @@ IF(CalibrateRhoAtInitialGuess==1) THEN
 	CALL rtflsp(FnDiscountRate,lrhoL,lrhoU,1.0e-8_8,tolrho,iflag,maxiterrho)
 	converged = .true.
 END IF
+
 
 
 !set up parameters
@@ -91,7 +91,7 @@ END IF
 IF(EstimateKappa2==1) THEN
     ip=ip+1
 	paramguess(ip) = log(kappa2_w-kappa2min)
-	IF(SobolSequenceExploration==0 .or. CalibrateCloseToSobol==0) paramub(ip) = 6.0 !4.0
+	IF(SobolSequenceExploration==0 .or. CalibrateCloseToSobol==0) paramub(ip) = 4.0
 	IF(SobolSequenceExploration==1 .and. CalibrateCloseToSobol==1) paramub(ip) = kappa2_w*2.0
     paramscale(ip) = 1.0/(log(paramub(ip)-kappa2min)-paramguess(ip))
 END IF
@@ -112,7 +112,7 @@ END IF
 IF(EstimateRho==1) THEN
     ip=ip+1
 	paramguess(ip) = invlogistic(exp(-rho))
-	IF(SobolSequenceExploration==0 .or. CalibrateCloseToSobol==0) paramub(ip) = 0.035 !0.04
+	IF(SobolSequenceExploration==0 .or. CalibrateCloseToSobol==0) paramub(ip) = 0.02
 	IF(SobolSequenceExploration==1 .and. CalibrateCloseToSobol==1) paramub(ip) = rho*1.5
     paramscale(ip) = 1.0/(invlogistic(exp(-paramub(ip)))-paramguess(ip))
 END IF
@@ -143,7 +143,7 @@ OPEN(3, FILE = trim(OutputDir) // 'paramub' //   '.txt', STATUS = 'replace'); CA
 x = paramguess*paramscale
 npt = 2*nparam+1
 lrhobeg = 1.0
-lrhoend = 1.0e-4
+lrhoend = 1.0e-5
 maxfun = 500*(nparam+1) 
 iprint = 3
 IF(ALLOCATED(w)) DEALLOCATE(w)
@@ -154,6 +154,18 @@ ALLOCATE(w((npt+11)*(npt+nparam) +nparam*(3*nparam+11)/2) )
 !DFLS uses the actual guesses with no bounds
 OPEN(4, FILE = trim(OutputDir) // 'iterations' //   '.txt', STATUS = 'replace')
 DO j = 1,ndfls
+	
+	IF(CalibrateRhoAtInitialGuess==1) THEN
+		IF (Display>=1) write(*,*) "Calibrating rho at initial steady state"
+		converged = .false.
+		neqmiter = 1
+		OPEN(3, FILE = trim(OutputDir) // 'DiscountRateAtInitialGuess.txt', STATUS = 'replace'); CLOSE(3)
+		lrhoL = invlogistic(exp(-0.02_8))
+		lrhoU = invlogistic(exp(-0.01_8))
+		CALL rtflsp(FnDiscountRate,lrhoL,lrhoU,1.0e-8_8,tolrho,iflag,maxiterrho)
+		converged = .true.
+	END IF
+	
 	write(4,*) '********************************** '
 	write(4,*) 'DFLS MINIMIZATION ATTEMPT ', j
 	CALL NEWUOA_H(nparam,npt,x,lrhobeg,lrhoend,iprint,maxfun,w,nmoments)
@@ -240,5 +252,30 @@ END IF
 
 calibrating = .false.
 
+!implied aggregate statistics: note that lump transfer is based on output=1.5, not actual output
+bond = Eb
+investment = deprec*capital
+priceadjust = 0.0
+profit = (1.0-mc)*capital/KYratio - priceadjust
+IF(DistributeProfitsInProportion==0) dividend = profit*(1.0-corptax)
+IF(DistributeProfitsInProportion==1) dividend = profdistfrac*profit*(1.0-corptax)
+output = tfp*(capital**alpha)*(labor**(1.0-alpha))
+fundbond = -capital*fundlev
+bondelast = bondelastrelgdp*output
+caputil 	= 1.0
+tfpadj = ((tfp**(1.0+utilelast)) * (mc*alpha/rcapital)**(alpha*utilelast))**(1.0/utilelastalpha)
+taxrev = labtax*wage*labor - lumptransfer + corptax*profit
+IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) taxrev = taxrev + labtax*(1.0-profdistfrac)*profit*(1.0-corptax)
+
+
+IF(GovBondResidualZeroWorld==0) THEN
+	govbond = -ssdebttogdp*output
+	govexp = taxrev + rb*govbond 
+	worldbond = -bond-govbond-fundbond
+ELSE IF(GovBondResidualZeroWorld==1) THEN
+	worldbond = 0.0
+	govbond = -bond-worldbond-fundbond
+	govexp = taxrev + rb*govbond		
+END IF
 
 END SUBROUTINE Calibration

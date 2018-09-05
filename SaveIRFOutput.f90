@@ -7,7 +7,7 @@ USE Procedures
 IMPLICIT NONE
 INTEGER		:: iy,it,ip,iq
 CHARACTER	:: lstring*80,lt*80
-REAL(8)		:: lmat(Ttransition,11),lmat4(Ttransition,4)
+REAL(8)		:: lmat(Ttransition,11),lmat4(Ttransition,4),lmat12(Ttransition,12)
 
 !flexible price transition
 IF(SolveFlexPriceTransition==1) THEN
@@ -37,9 +37,9 @@ IF(SolveFlexPriceTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'worldbond.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%worldbond)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'borrwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%borrwedge)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'rho.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%rho)
-	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'kappafc_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%kappafc_w)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'kappa0_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%kappa0_w)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'kappa1_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%kappa1_w)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'mpshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%mpshock)
-	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'ysig.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%ysig)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'prefshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%prefshock)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'elast.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%elast)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'fundlev.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%fundlev)
@@ -49,17 +49,24 @@ IF(SolveFlexPriceTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'profit.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%profit)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'dividend.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%dividend)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'divrate.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%divrate)
-	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'intfirmbond.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%intfirmbond)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'lumptransfer.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%lumptransfer)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'equity.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%equity)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'caputil.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%caputil)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'deprec.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%deprec)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'tfpadj.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%tfpadj)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'illassetdrop.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%illassetdrop)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'govshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%govshock)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'transfershock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%transfershock)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'finwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%finwedge)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'labwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%labwedge)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'pricelev.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%pricelev)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'prodgridscale.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%prodgridscale)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'prodmarkovscale.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmFLEX%prodmarkovscale)
 
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Ea.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Ea)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Eb.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Eb)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Ec.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Ec)
-	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Erent.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Erent)
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Elabor.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Elabor)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Ed.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Ed)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Ewage.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Ewage)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Enetlabinc.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Enetlabinc)
@@ -81,7 +88,6 @@ IF(SolveFlexPriceTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'EbN.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%EbN)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'EbP.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%EbP)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Eadjcost.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Eadjcost)
-	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Efsp.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%Efsp)
 
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'GINIa.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%GINIa)
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'GINIb.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsFLEX%GINIb)
@@ -133,6 +139,10 @@ IF(SolveFlexPriceTransition==1) THEN
 	DO iq = 1,4;lmat4(:,iq) = irfsave%statsFLEX%Einc_incQ(iq); END DO	
 	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Einc_incQ.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,4,lmat4)
 
+	DO iq = 1,12;lmat12(:,iq) = irfsave%statsFLEX%Ec_nwQ_add(iq); END DO	
+	OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'Ec_nwQ_add.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,12,lmat12)
+
+
 	IF(SaveTime1PolicyFns==1) THEN
 		DO iy = 1,ngpy
 			IF (iy<10) WRITE(UNIT=lstring, FMT='(I1)') iy
@@ -141,10 +151,36 @@ IF(SolveFlexPriceTransition==1) THEN
 			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'V_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%V(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'dep_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%d(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'con_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%c(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'sav_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%s(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'hour_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%h(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'bdot_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%bdot(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'gjoint_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%gjoint(:,:,iy))
+			IF(ComputeDiscountedMPC==1) THEN
+				OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'mpc_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%mpc(:,:,iy))
+				OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'subeff1ass_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%subeff1ass(:,:,iy))
+				OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'subeff2ass_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%subeff2ass(:,:,iy))
+				OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'wealtheff1ass_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%wealtheff1ass(:,:,iy))
+				OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/"  // 'wealtheff2ass_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnFLEX(1)%wealtheff2ass(:,:,iy))
+			END IF
+		
+		
 		END DO
 	END IF
+	
+	IF (SaveCumPolicyFnsIRF==1) THEN
+		DO iy = 1,ngpy
+			IF (iy<10) WRITE(UNIT=lstring, FMT='(I1)') iy
+			IF (iy >= 10) WRITE(UNIT=lstring, FMT='(I2)') iy
+			
+			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'ccum1_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumFLEX%ccum1(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'ccum2_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumFLEX%ccum2(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'ccum4_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumFLEX%ccum4(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'dcum1_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumFLEX%dcum1(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'dcum2_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumFLEX%dcum2(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "FLEX/" // 'dcum4_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumFLEX%dcum4(:,:,iy))
+		END DO
+		
+	END IF	
 	
 	!transitions steady state distributions and policy functions
 	IF(SaveTransitionPolicyFns==1) THEN
@@ -203,9 +239,9 @@ IF(SolveStickyPriceTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'worldbond.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%worldbond)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'borrwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%borrwedge)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'rho.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%rho)
-	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'kappafc_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%kappafc_w)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'kappa0_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%kappa0_w)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'kappa1_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%kappa1_w)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'mpshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%mpshock)
-	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'ysig.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%ysig)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'prefshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%prefshock)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'elast.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%elast)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'fundlev.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%fundlev)
@@ -215,17 +251,24 @@ IF(SolveStickyPriceTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'profit.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%profit)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'dividend.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%dividend)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'divrate.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%divrate)
-	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'intfirmbond.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%intfirmbond)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'lumptransfer.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%lumptransfer)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'equity.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%equity)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'caputil.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%caputil)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'deprec.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%deprec)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'tfpadj.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%tfpadj)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'illassetdrop.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%illassetdrop)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'govshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%govshock)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'transfershock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%transfershock)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'finwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%finwedge)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'labwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%labwedge)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'pricelev.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%pricelev)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'prodgridscale.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%prodgridscale)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'prodmarkovscale.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmSTICKY%prodmarkovscale)
 
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Ea.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Ea)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Eb.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Eb)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Ec.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Ec)
-	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Erent.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Erent)
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Elabor.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Elabor)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Ed.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Ed)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Ewage.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Ewage)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Enetlabinc.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Enetlabinc)
@@ -247,7 +290,6 @@ IF(SolveStickyPriceTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'EbN.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%EbN)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'EbP.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%EbP)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Eadjcost.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Eadjcost)
-	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Efsp.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%Efsp)
 
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'GINIa.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%GINIa)
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'GINIb.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsSTICKY%GINIb)
@@ -298,6 +340,10 @@ IF(SolveStickyPriceTransition==1) THEN
 	DO iq = 1,4;lmat4(:,iq) = irfsave%statsSTICKY%Einc_incQ(iq); END DO	
 	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Einc_incQ.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,4,lmat4)
 
+	DO iq = 1,12;lmat12(:,iq) = irfsave%statsSTICKY%Ec_nwQ_add(iq); END DO	
+	OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'Ec_nwQ_add.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,12,lmat12)
+
+
 	IF(SaveTime1PolicyFns==1) THEN
 		DO iy = 1,ngpy
 			IF (iy<10) WRITE(UNIT=lstring, FMT='(I1)') iy
@@ -306,10 +352,35 @@ IF(SolveStickyPriceTransition==1) THEN
 			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'V_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%V(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'dep_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%d(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'con_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%c(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'sav_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%s(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'hour_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%h(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'bdot_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%bdot(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'gjoint_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%gjoint(:,:,iy))
+			IF(ComputeDiscountedMPC==1) THEN
+				OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'mpc_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%mpc(:,:,iy))
+				OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'subeff1ass_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%subeff1ass(:,:,iy))
+				OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'subeff2ass_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%subeff2ass(:,:,iy))
+				OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'wealtheff1ass_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%wealtheff1ass(:,:,iy))
+				OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/"  // 'wealtheff2ass_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnSTICKY(1)%wealtheff2ass(:,:,iy))
+			END IF
 		END DO
 	END IF
+	
+	IF (SaveCumPolicyFnsIRF==1) THEN
+		DO iy = 1,ngpy
+			IF (iy<10) WRITE(UNIT=lstring, FMT='(I1)') iy
+			IF (iy >= 10) WRITE(UNIT=lstring, FMT='(I2)') iy
+			
+			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'ccum1_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumSTICKY%ccum1(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'ccum2_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumSTICKY%ccum2(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'ccum4_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumSTICKY%ccum4(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'dcum1_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumSTICKY%dcum1(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'dcum2_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumSTICKY%dcum2(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "STICKY/" // 'dcum4_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumSTICKY%dcum4(:,:,iy))
+		END DO
+		
+	END IF	
+	
 	!transitions steady state distributions and policy functions
 	IF(SaveTransitionPolicyFns==1) THEN
 		CALL system ("mkdir -p " // trim(OutputDirIRF) // "STICKY/FuncDist/")	
@@ -366,9 +437,9 @@ IF(SolveZLBTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'worldbond.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%worldbond)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'borrwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%borrwedge)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'rho.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%rho)
-	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'kappafc_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%kappafc_w)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'kappa0_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%kappa0_w)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'kappa1_w.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%kappa1_w)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'mpshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%mpshock)
-	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'ysig.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%ysig)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'prefshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%prefshock)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'elast.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%elast)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'fundlev.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%fundlev)
@@ -378,17 +449,24 @@ IF(SolveZLBTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'profit.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%profit)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'dividend.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%dividend)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'divrate.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%divrate)
-	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'intfirmbond.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%intfirmbond)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'lumptransfer.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%lumptransfer)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'equity.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%equity)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'caputil.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%caputil)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'deprec.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%deprec)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'tfpadj.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%tfpadj)
-	
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'illassetdrop.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%illassetdrop)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'govshock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%govshock)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'transfershock.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%transfershock)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'finwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%finwedge)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'labwedge.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%labwedge)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'pricelev.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%pricelev)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'prodgridscale.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%prodgridscale)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'prodmarkovscale.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%equmZLB%prodmarkovscale)
+
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Ea.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Ea)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Eb.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Eb)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Ec.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Ec)
-	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Erent.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Erent)
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Elabor.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Elabor)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Ed.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Ed)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Ewage.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Ewage)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Enetlabinc.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Enetlabinc)
@@ -410,7 +488,6 @@ IF(SolveZLBTransition==1) THEN
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'EbN.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%EbN)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'EbP.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%EbP)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Eadjcost.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Eadjcost)
-	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Efsp.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%Efsp)
 
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'GINIa.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%GINIa)
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'GINIb.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,1,irfsave%statsZLB%GINIb)
@@ -461,6 +538,9 @@ IF(SolveZLBTransition==1) THEN
 	DO iq = 1,4;lmat4(:,iq) = irfsave%statsZLB%Einc_incQ(iq); END DO	
 	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Einc_incQ.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,4,lmat4)
 
+	DO iq = 1,12;lmat12(:,iq) = irfsave%statsZLB%Ec_nwQ_add(iq); END DO	
+	OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'Ec_nwQ_add.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,Ttransition,12,lmat12)
+
 	IF(SaveTime1PolicyFns==1) THEN
 		DO iy = 1,ngpy
 			IF (iy<10) WRITE(UNIT=lstring, FMT='(I1)') iy
@@ -469,10 +549,27 @@ IF(SolveZLBTransition==1) THEN
 			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'V_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnZLB(1)%V(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/"  // 'dep_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnZLB(1)%d(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/"  // 'con_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnZLB(1)%c(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/"  // 'sav_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnZLB(1)%s(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/"  // 'hour_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnZLB(1)%h(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/"  // 'bdot_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnZLB(1)%bdot(:,:,iy))
 			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/"  // 'gjoint_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%solnZLB(1)%gjoint(:,:,iy))
 		END DO
 	END IF
+	
+	IF (SaveCumPolicyFnsIRF==1) THEN
+		DO iy = 1,ngpy
+			IF (iy<10) WRITE(UNIT=lstring, FMT='(I1)') iy
+			IF (iy >= 10) WRITE(UNIT=lstring, FMT='(I2)') iy
+			
+			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'ccum1_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumZLB%ccum1(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'ccum2_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumZLB%ccum2(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'ccum4_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumZLB%ccum4(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'dcum1_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumZLB%dcum1(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'dcum2_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumZLB%dcum2(:,:,iy))
+			OPEN(3, FILE = trim(OutputDirIRF) // "ZLB/" // 'dcum4_T1_y' // trim(lstring) //'.txt', STATUS = 'replace'); CALL WriteMatrixExpon(3,ngpa,ngpb,irfsave%cumZLB%dcum4(:,:,iy))
+		END DO
+		
+	END IF	
 	
 	!transitions steady state distributions and policy functions
 	IF(SaveTransitionPolicyFns==1) THEN

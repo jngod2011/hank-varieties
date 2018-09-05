@@ -7,9 +7,9 @@ USE Procedures
 IMPLICIT NONE
 
 INTEGER					:: ip,is,iflag,ismin(1)
-REAL(8)					:: lrhoL,lrhoU
+REAL(8)					:: lrhoL,lrhoU,lub
 REAL(8)			:: lcapital,loutput,lKNratio
-REAL(8), EXTERNAL 		:: FnDiscountRate
+REAL(8), EXTERNAL 		:: FnDiscountRate, FnCapitalEquity
 
 exploring = .true.
 
@@ -189,25 +189,11 @@ DO is = 1,nsobol
 	rcapital = mc*alpha/KYratio
 	wage = mc*(1.0-alpha)*tfp*(KNratio**alpha)
 	netwage = (1.0-labtax)*wage
-	rborr = rb + borrwedge
-	labor = (netwage/chi)**frisch
-	capital = KNratio*labor
-	profit = (1.0-mc-operatecost)*capital/KYratio - priceadjust
-	dividend = profit*(1.0-corptax)
-	IF(DividendFundLumpSum==0) divrate = dividend/capital
+	IF(DividendFundLumpSum==0) divrate =  (1.0-corptax)*(1.0-mc)/KYratio !outside of steady state include price adjustments
 	IF(DividendFundLumpSum==1) divrate = 0.0
 	ra = (rcapital - deprec + divrate - fundlev*rb)/(1.0-fundlev)
-	IF(DividendFundLumpSum==0) equity = 0.0
-	IF(DividendFundLumpSum==1)equity = profit/ra
-	output = tfp*(capital**alpha)*(labor**(1.0-alpha)) + rhousing*housefrac*((1.0-fundlev)*capital+equity)/(1.0-housefrac)
-	fundbond = -capital*fundlev
-	govbond = -ssdebttogdp*output
-	priceadjust = 0.0
-	intfirmbond = 0.0
-
-	directdepmax = directdepmaxfrac*output
-	directdepmin = directdepminfrac*output
-
+	rborr = rb + borrwedge
+	
 	IF (CalibrateRhoInExploration==0) THEN
 		CALL Grids
 		CALL IterateBellman
@@ -224,11 +210,34 @@ DO is = 1,nsobol
 		write(4,*) ' calibrated rho: ',rho
 	END IF
 
-	!model implied moments
-	IF(DividendFundLumpSum==0) lcapital = (1.0-housefrac)*Ea/(1.0-fundlev)
-	IF(DividendFundLumpSum==1) lcapital = (1.0-housefrac)*Ea/(1.0-fundlev + (1.0-mc-operatecost)/(ra*KYratio))
+
+	labor = Elabor
+	IF(DividendFundLumpSum==0) lcapital = Ea/(1.0-fundlev)
+	IF(DividendFundLumpSum==1) THEN
+		IF(FnCapitalEquity(0.00001*Ea)>0.0) THEN
+			lub = 0.00001*Ea
+		ELSEIF(FnCapitalEquity(0.0001*Ea)>0.0) THEN
+			lub = 0.0001*Ea
+		ELSEIF(FnCapitalEquity(0.001*Ea)>0.0) THEN
+			lub = 0.001*Ea
+		ELSEIF(FnCapitalEquity(0.01*Ea)>0.0) THEN
+			lub = 0.01*Ea
+		ELSEIF(FnCapitalEquity(0.1*Ea)>0.0) THEN
+			lub = 0.1*Ea
+		ELSE
+			lub = Ea
+		END IF
+
+		CALL rtsec(FnCapitalEquity,0.0_8,lub,1.0e-6_8,capital,iflag)
+		IF(iflag<0) CALL rtbis(FnCapitalEquity,0.0_8,lub,1.0e-6_8,1.0e-7_8,capital) 
+	END IF	
 	
-	loutput = tfp*(lcapital**alpha)*(labor**(1.0-alpha)) + rhousing*housefrac*((1.0-fundlev)*lcapital+equity)/(1.0-housefrac)
+	equity = Ea - (1.0-fundlev)*lcapital
+
+	lKNratio = lcapital/labor
+	modelKYratio = (lKNratio**(1.0-alpha)) / tfp
+
+	loutput = tfp*(lcapital**alpha)*(labor**(1.0-alpha))
 		
 	lKNratio = lcapital/labor
 	modelKYratio = (lKNratio**(1.0-alpha)) / tfp	
@@ -425,29 +434,15 @@ CLOSE(4)
 
 exploring = .false.
 
-KYratio = targetKYratio
+KYratio = targetKYratio  !ratio to productive output
 KNratio = (tfp*KYratio)**(1.0/(1.0-alpha))
 rcapital = mc*alpha/KYratio
 wage = mc*(1.0-alpha)*tfp*(KNratio**alpha)
 netwage = (1.0-labtax)*wage
-labor = (netwage/chi)**frisch
-capital = KNratio*labor
-profit = (1.0-mc-operatecost)*capital/KYratio - priceadjust
-dividend = profit*(1.0-corptax)
-IF(DividendFundLumpSum==0) divrate = dividend/capital
+IF(DividendFundLumpSum==0) divrate =  (1.0-corptax)*(1.0-mc)/KYratio !outside of steady state include price adjustments
 IF(DividendFundLumpSum==1) divrate = 0.0
 ra = (rcapital - deprec + divrate - fundlev*rb)/(1.0-fundlev)
-IF(DividendFundLumpSum==0) equity = 0.0
-IF(DividendFundLumpSum==1)equity = profit/ra
-output = tfp*(capital**alpha)*(labor**(1.0-alpha)) + rhousing*housefrac*((1.0-fundlev)*capital+equity)/(1.0-housefrac)
-rborr = rb + borrwedge
-fundbond = -capital*fundlev
-taxrev = labtax*wage*labor - lumptransfer + corptax*profit
-govbond = -ssdebttogdp*output
-govexp = taxrev + rb*govbond
-directdepmax = directdepmaxfrac*output
-directdepmin = directdepminfrac*output
-priceadjust = 0.0
+
 
 END SUBROUTINE Exploration
 
