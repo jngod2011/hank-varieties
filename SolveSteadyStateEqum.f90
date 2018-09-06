@@ -6,145 +6,134 @@ USE Procedures
 
 IMPLICIT NONE
 
-REAL(8) 	:: ldiffKN, lKNratio,lKYratio,lwage,lrcapital,lstepKN,ldiffprof,lprofit
+! REAL(8) 	:: lwage,lrcapital,ldiffprof,lprofit
+REAL(8) 	:: ldiff,llabor_Y,llabor_N,lK_totoutput_ratio,lstep,lstep_lab
+REAL(8) 	:: la,lb,lc
 
 OPEN(3, FILE = trim(OutputDir) // 'SteadyStateEqumIteration.txt', STATUS = 'replace'); CLOSE(3)
 
 converged = .false.
 neqmiter = 1
-IF(calibrating == .false.) lstepKN = stepequmss
-IF(calibrating == .true. ) lstepKN = 0.2*stepequmss
-ldiffKN = 1.0
+ldiff = 1.0
+lstep 	= stepequmss
+lstep_lab = 0.25
+
+IF(initialSS == .true. .and. CalibrateDiscountRate==0) CALL Grids
+IF(initialSS == .true. .and. CalibrateDiscountRate==0) CALL InitialPrices
 
 IF(OneAssetNoCapital==0) THEN
-	DO WHILE (neqmiter<=maxiterequmss .and. ldiffKN>tolequmss )
+	DO WHILE (neqmiter<=maxiterequmss .and. ldiff>tolequmss )
 
-		IF (Display>=2) THEN
-			WRITE(*,*) '*******************************************'
-			WRITE(*,*) ' ITERATION : 			',neqmiter
-			WRITE(*,*) ' r guess: 			',rcapital
-			WRITE(*,*) '  implied ra: 		',ra
-			WRITE(*,*) '  implied borr rate: ',rborr
-			WRITE(*,*) '  implied wage: ',wage
-			WRITE(*,*) '  implied KY ratio: ',KYratio
-			WRITE(*,*) '  implied KN firm: 	',KNratio
-		END IF
+! 		IF (Display>=2) THEN
+! 			WRITE(*,*) '*******************************************'
+! 			WRITE(*,*) ' ITERATION : 			',neqmiter
+! 			WRITE(*,*) ' r guess: 			',rcapital
+! 			WRITE(*,*) '  implied ra: 		',ra
+! 			WRITE(*,*) '  implied borr rate: ',rborr
+! 			WRITE(*,*) '  implied wage: ',wage
+! 			WRITE(*,*) '  implied KY ratio: ',KYratio
+! 			WRITE(*,*) '  implied KN firm: 	',KNratio
+! 		END IF
 
-		IF(initialSS == .true.) CALL Grids
 		CALL IterateBellman
 		CALL StationaryDistribution
 		CALL DistributionStatistics
-
-
-
-		IF(DividendFundLumpSum==0) capital = Ea/(1.0-fundlev)
-		IF(DividendFundLumpSum==1) THEN
-			IF(DistributeProfitsInProportion==0) capital = Ea/(1.0-fundlev + (1.0-mc)*(1.0-corptax)/(ra*KYratio))
-			IF(DistributeProfitsInProportion==1) capital = Ea/(1.0-fundlev + (1.0-mc)*(1.0-corptax)*profdistfrac/(ra*KYratio))
-		END IF
-		
-		labor = Elabor
-		equity = Ea - (1.0-fundlev)*capital
-		lKNratio = capital / labor
-		lKYratio = (lKNratio**(1.0-alpha)) / tfp
-		lwage = mc*(1.0-alpha)* tfp * (lKNratio**alpha)
-		lrcapital = mc*alpha/lKYratio
-
-		ldiffKN= abs(lKNratio/KNratio - 1.0)
-		IF (Display>=1) write(*,"(A,I2,A,E11.4)") ' Steady state equm iter ',neqmiter, ', K/N error',lKNratio/KNratio - 1.0
-
-		OPEN(3, FILE = trim(OutputDir) // 'SteadyStateEqumIteration.txt', ACCESS = 'append')
-		WRITE(3,*) '*******************************************'
-		WRITE(3,*) ' ITERATION : 			',neqmiter
-		WRITE(3,*) ' r guess: 	',rcapital
-		WRITE(3,*) '  implied ra: 	',ra
-		WRITE(3,*) '  implied borr rate: ',rborr	
-		WRITE(3,*) '  implied wage: ',wage
-		WRITE(3,*) '  implied KY ratio: ',KYratio
-		WRITE(3,*) '  actual KY ratio: ',lKYratio
-		WRITE(3,*) '  implied KN firm: 	',KNratio
-		WRITE(3,*) '  implied KN hh: 	',lKNratio
-		WRITE(3,*) '  relative error: ',lKNratio/KNratio - 1.0
-		CLOSE(3)
-		
-		!update KN ratio
-		IF (neqmiter<=maxiterequmss .and. ldiffKN>tolequmss ) THEN
-			KNratio = (1.0-lstepKN)*KNratio +lstepKN*lKNratio
-		ELSE
-			KNratio = lKNratio
-		END IF
-
-		KYratio = (KNratio**(1.0-alpha)) / tfp
-		profit = (1.0-mc)*capital/KYratio
-		rcapital = mc*alpha/KYratio
-		wage = mc*(1.0-alpha)*tfp*(KNratio**alpha)
-		netwage = (1.0-labtax)*wage
-		IF(DividendFundLumpSum==1) divrate = 0.0
-		IF(DividendFundLumpSum==0) divrate =  (1.0-corptax)*(1.0-mc)/KYratio !outside of steady state include price adjustments
-		IF(DistributeProfitsInProportion==1) divrate =  profdistfrac*divrate
-		ra = (rcapital - deprec + divrate - fundlev*rb)/(1.0-fundlev)
 	
+		!implied capital-output ratio
+		la = -deprec 
+		lb = Ea*deprec + (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N + ((1.0-1.0/elast)*(1.0-drs_Y) + (1.0/elast)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
+		lc = - Ea* ( (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N )
+		lK_totoutput_ratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
+
+		!implied total labor
+		llabor_Y = Elabor_Y/varieties
+		llabor_N = Elabor_N
+	
+		!check convergence
+		ldiff = abs(lK_totoutput_ratio/K_totoutput_ratio - 1.0) + abs(llabor_Y/labor_Y - 1.0) + abs(llabor_N/labor_N - 1.0)
+		IF (Display>=1) THEN
+			write(*,*) 'Steady state iter ',neqmiter
+			write(*,"(9999(G14.6,:,','))") ' K-NY ratio:',K_totoutput_ratio,', labor_Y:',labor_Y,', labor_N:',labor_N
+			write(*,"(9999(G14.6,:,','))") ' K-NY ratio:',lK_totoutput_ratio,', labor_Y:',llabor_Y,', labor_N:',llabor_N
+			write(*,*) ' Err: ',ldiff
+			write(*,*) ' '
+		END IF
+	
+		!update
+		K_totoutput_ratio = lstep*lK_totoutput_ratio + (1.0-lstep)*K_totoutput_ratio
+		labor_Y = lstep_lab*llabor_Y + (1.0-lstep_lab)*labor_Y
+		labor_N = lstep_lab*llabor_N + (1.0-lstep_lab)*labor_N
+	
+		!implied prices and equm objects
+		capital = totoutput * K_totoutput_ratio
+		rcapital = (price_W*alpha_Y*drs_Y + (grossprofit_R/output)*alpha_N*drs_N)/K_totoutput_ratio
+
+		capital_Y = price_W*alpha_Y*drs_Y*output/rcapital
+		tfp_Y = output / (((capital_Y**alpha_Y)*(labor_Y**(1.0-alpha_Y))) ** drs_Y)
+		wage_Y = price_W*(1.0-alpha_Y)*drs_Y*output/labor_Y
+		mc_Y = (1.0/tfp_Y)*((rcapital/alpha_Y)**alpha_Y) *((wage_Y/(1.0-alpha_Y))**(1.0-alpha_Y))
+
+		capital_N = grossprofit_R*alpha_N*drs_N*varieties/rcapital
+		tfp_N = varieties / (((capital_N**alpha_N)*(labor_N**(1.0-alpha_N))) ** drs_N)
+		wage_N = grossprofit_R*(1.0-alpha_N)*drs_N*varieties/labor_N
+		mc_N = (1.0/tfp_N)*((rcapital/alpha_N)**alpha_N) *((wage_N/(1.0-alpha_N))**(1.0-alpha_N))
+
+		ra = rcapital - deprec
+		dividend_A = profdistfracA*profit*(1.0-corptax)
+		equity_A = dividend_A/ra
+		dividend_B = profdistfracB*profit*(1.0-corptax)
+		equity_B = dividend_B/rb
+
+		netwagegrid = (1.0-labtax) * yprodgrid * ( wage_N*yoccgrid + wage_Y*(1.0-yoccgrid) )
+
 		neqmiter = neqmiter+1 
 
 	END DO
 
-ELSE IF(OneAssetNoCapital==1) THEN
-
-	IF(DistributeProfitsInProportion==0) THEN
-		IF(initialSS == .true.)CALL Grids
-		CALL IterateBellman
-		CALL StationaryDistribution
-		CALL DistributionStatistics
-		labor = Elabor
-		profit = (1.0-mc)*tfp*labor
-	
-	ELSE IF(DistributeProfitsInProportion==1) THEN  	!iterate on profits
-		ldiffprof=1
-		DO WHILE (neqmiter<=maxiterequmss .and. ldiffprof>tolequmss )
-			IF(initialSS == .true.)CALL Grids
-			CALL IterateBellman
-			CALL StationaryDistribution
-			CALL DistributionStatistics
-			labor = Elabor
-			lprofit = (1.0-mc)*tfp*labor
-			
-			ldiffprof= abs(lprofit/profit - 1.0)			
-			IF (Display>=1) write(*,"(A,I2,A,E11.4)") ' Steady state equm iter ',neqmiter, ', Profit error',lprofit/profit - 1.0
-			
-			profit = lprofit
-			neqmiter = neqmiter+1 
-			
-		END DO	
-	END IF
-	
-	capital = 0.0
-	equity = 0.0
-	KYratio = 0.0
-	KNratio = 0.0
+! ELSE IF(OneAssetNoCapital==1) THEN
+!
+!
+! 	ldiffprof=1
+! 	DO WHILE (neqmiter<=maxiterequmss .and. ldiffprof>tolequmss )
+! 		IF(initialSS == .true.)CALL Grids
+! 		CALL IterateBellman
+! 		CALL StationaryDistribution
+! 		CALL DistributionStatistics
+! 		labor = Elabor
+! 		lprofit = (1.0-mc)*tfp*labor
+!
+! 		ldiffprof= abs(lprofit/profit - 1.0)
+! 		IF (Display>=1) write(*,"(A,I2,A,E11.4)") ' Steady state equm iter ',neqmiter, ', Profit error',lprofit/profit - 1.0
+!
+! 		profit = lprofit
+! 		neqmiter = neqmiter+1
+!
+! 	END DO
+!
+! 	capital = 0.0
+! 	equity = 0.0
+! 	KYratio = 0.0
+! 	KNratio = 0.0
 END IF
 
 bond = Eb
 investment = deprec*capital
 priceadjust = 0.0
-dividend = profit*(1.0-corptax)
-IF(DistributeProfitsInProportion==1) dividend = profdistfrac*dividend 
-output = tfp*(capital**alpha)*(labor**(1.0-alpha))
-fundbond = -capital*fundlev
 bondelast = bondelastrelgdp*output
+
+taxrev = labtax*wage_Y*labor_Y*varieties + labtax*wage_N*labor_N - lumptransfer + corptax*profit
+IF(TaxHHProfitIncome == 1) taxrev = taxrev + labtax*profdistfracW*profit*(1.0-corptax)
+
 caputil 	= 1.0
-IF(OneAssetNoCapital==0) tfpadj = ((tfp**(1.0+utilelast)) * (mc*alpha/rcapital)**(alpha*utilelast))**(1.0/utilelastalpha)
-IF(OneAssetNoCapital==1) tfpadj = tfp
-taxrev = labtax*wage*labor - lumptransfer + corptax*profit
-IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) taxrev = taxrev + labtax*(1.0-profdistfrac)*profit*(1.0-corptax)
 illassetdrop = 1.0
 
 IF(GovBondResidualZeroWorld==0) THEN
 	govbond = -ssdebttogdp*output
 	govexp = taxrev + rb*govbond 
-	worldbond = -bond-govbond-fundbond
+	worldbond = equity_B - bond - govbond
 ELSE IF(GovBondResidualZeroWorld==1) THEN
 	worldbond = 0.0
-	govbond = -bond-worldbond-fundbond
+	govbond = equity_B - bond - worldbond
 	govexp = taxrev + rb*govbond		
 END IF
 

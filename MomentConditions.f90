@@ -86,22 +86,9 @@ ELSE IF(NoDepositCost==1) THEN
 END IF
 
 
-
-
-KYratio = targetKYratio  !ratio to productive output
-KNratio = (tfp*KYratio)**(1.0/(1.0-alpha))
-rcapital = mc*alpha/KYratio
-wage = mc*(1.0-alpha)*tfp*(KNratio**alpha)
-netwage = (1.0-labtax)*wage
-IF(DividendFundLumpSum==1) divrate = 0.0
-IF(DividendFundLumpSum==0) divrate =  (1.0-corptax)*(1.0-mc)/KYratio !outside of steady state include price adjustments
-IF(DistributeProfitsInProportion==1) divrate =  profdistfrac*divrate
-
-ra = (rcapital - deprec + divrate - fundlev*rb)/(1.0-fundlev)
-rborr = rb + borrwedge
-
 IF(ImposeEqumInCalibration==0) THEN
 	CALL Grids
+	CALL InitialPrices
 	CALL IterateBellman
 	CALL StationaryDistribution
 ELSE IF(ImposeEqumInCalibration==1) THEN
@@ -111,39 +98,18 @@ END IF
 
 CALL DistributionStatistics
 
-labor = Elabor
-IF(DividendFundLumpSum==0) capital = Ea/(1.0-fundlev)
-IF(DividendFundLumpSum==1) THEN
-	
+!implied capital-output ratio
+la = -deprec 
+lb = Ea*deprec + (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N + ((1.0-1.0/elast)*(1.0-drs_Y) + (1.0/elast)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
+lc = - Ea* ( (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N )
+lK_totoutput_ratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
 
-    IF (Ea<0.1) THEN
-       capital = Ea
-    ELSE
-		IF(FnCapitalEquity(0.00001*Ea)>0.0) THEN
-			lub = 0.00001*Ea
-		ELSEIF(FnCapitalEquity(0.0001*Ea)>0.0) THEN
-			lub = 0.0001*Ea
-		ELSEIF(FnCapitalEquity(0.001*Ea)>0.0) THEN
-			lub = 0.001*Ea
-		ELSEIF(FnCapitalEquity(0.01*Ea)>0.0) THEN
-			lub = 0.01*Ea
-		ELSEIF(FnCapitalEquity(0.1*Ea)>0.0) THEN
-			lub = 0.1*Ea
-		ELSE
-			lub = Ea
-		END IF
+!implied total labor
+llabor_Y = Elabor_Y/varieties
+llabor_N = Elabor_N
 
-		CALL rtsec(FnCapitalEquity,0.0_8,lub,1.0e-6_8,capital,iflag)
-		IF(iflag<0) CALL rtbis(FnCapitalEquity,0.0_8,lub,1.0e-6_8,1.0e-7_8,capital)
-	END IF
-END IF	
-	
-equity = Ea - (1.0-fundlev)*capital
-profit = (1.0-mc)*capital/KYratio - priceadjust
-
-lKNratio = capital/labor
-modelKYratio = (lKNratio**(1.0-alpha)) / tfp
-IF(capital < 1.0e-8) modelKYratio = 0.0
+!recall normalize steady-state output to 1
+PROBLEM HERE BECAUSE IT ONLY WORKS WITH RHO CALIBRATION BECAUSE WE UPDATE LABOR.
 
 !model implied moments
 IF(MatchRelativeToTargetOutput==0) THEN

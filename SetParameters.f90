@@ -7,7 +7,6 @@ USE Procedures
 IMPLICIT NONE
 
 INTEGER 	:: iy
-REAL 		:: la,lb,lc
 
 !OUTPUT DIR
 OutputDir =			"/Volumes/FILES/Large/HANKVarieties/test/"
@@ -30,9 +29,9 @@ Display              		= 1
 ReportNonMonotonicity   	= 0
 
 !run options
-CalibrateDiscountRate	= 0
+CalibrateDiscountRate	= 1
 EquilibriumR		 	= 1
-ComputeCumulativeMPC 	= 0
+ComputeCumulativeMPC 	= 1
 DoImpulseResponses 		= 0
 DoFeedInPrices 			= 0
 SaveTransitionPolicyFns = 0	!warning: will create a very large number of text files 
@@ -89,9 +88,9 @@ FixBorrowRateTransition 	= 1
 
 !profit distribution options: fractions must sum to 1.0
 TaxHHProfitIncome	= 1 !taxes labor subsidy component of profit income at labor tax rate
-profdistfracA		= 1.0	!fraction of profits to illiquid equity (set to alpha)
+profdistfracA		= 0.33	!fraction of profits to illiquid equity (set to alpha)
 profdistfracB		= 0.0	!fraction of profits to liquid equity
-profdistfracW		= 0.0 !0.67	!fraction of profits to labor subsidy (set to 1-alpha)
+profdistfracW		= 0.67	!fraction of profits to labor subsidy (set to 1-alpha)
 profdistfracL 		= 0.0 !0.0 	!fraction of profits lump-sum to households
 
 
@@ -246,7 +245,7 @@ tolequmss		= 1.0e-6
 stepequmss		= 0.05
 maxiterequmss	= 40 !20
 maxiterrho 		= 50 !30 !50
-tolrho			= 1.0e-8
+tolrho			= 1.0e-5 !1.0e-8
 
 toltransition	= 1.0e-7
 TransitionTimeStepType = 2
@@ -278,11 +277,10 @@ bondprefweight 	= 0.01
 
 !liquid assets
 rb			 = 0.02/4.0 !liquid return
-borrwedge 	 = 0.0148846 !0.019663 ! !quarterly wedge between rb and rborr: intermediation cost  
+borrwedge 	 = 0.015 !0.0148846 !0.019663 ! !quarterly wedge between rb and rborr: intermediation cost  
 borrwedgemax = 0.09
 blim 		 = -1.0 	!borrowing limit multiple of quarterly output
 finwedge	= 0.0 !financial intermediation wedge: households receive rb - finwedge
-rborr = rb + borrwedge
 
 
 !withdrawal costs
@@ -320,7 +318,7 @@ ELSE
 END IF	
 	
 
-theta 		= 100.0 !price adjustment cost
+priceadjcost 		= 100.0 !price adjustment cost
 phitaylor 	= 1.25  ! inflation coefficient in taylor rule, 0.0 for fixed nominal interest rate at ss.
 taylorpers 	= 0.1	!strong persistence is 0, low persistence is 1. only active if BackwardTermInTaylorRule=1
 IF(BackwardTermInTaylorRule==1) phitaylor = phitaylor/taylorpers
@@ -334,27 +332,28 @@ mpshock 	= 0.0		!shock to nominal interest rate in taylor rule
 
 elast 	= 10.0 !elasticity of DS aggregator
 gap 	= 0.0 !steady state output gap
-mc = (elast-1.0)/elast
+
+meanlabeff = 1.0
+frisch 		= 1.0 	!frisch elasticity labor supply
 
 !production parameters
 drs_Y 		= 0.6
 alpha_Y		= 0.33
 tfp_Y 		= 1.0
-alphatilde_Y 	= (alpha_Y**alpha_Y) * ((1.0-alpha_Y)**(1.0-alpha_Y))
 
 drs_N 		= 0.95
 alpha_N		= 0.33
 tfp_N 		= 1.0
-alphatilde_N 	= (alpha_N**alpha_N) * ((1.0-alpha_N)**(1.0-alpha_N))
 
 deprec 		= 0.07/4.0 !depreciation rate
 
 utilelast 	= 0.0
-utilelastalpha  = 1.0 + utilelast-alpha*utilelast
+utilelastalpha  = 1.0 + utilelast-alpha_Y*utilelast
 
 !government
 labtax 			= 0.30
 lumptransferpc 	= 0.01 !40000*labtax/(115000.0*2.92*4.0)
+lumptransfer	= lumptransferpc*1.0 !initialize assuming totoutput=1
 corptax 		= 0.0
 ssdebttogdp 	= 0.26*4 !if foreign sector assumed to hold residual bonds or if equilibrium in liquid assets
 govshock 		= 1.0
@@ -371,72 +370,6 @@ targetFracLiq0 		= 0.35 !0.30 !0.36 !0.35
 targetFracLiqNEG	= 0.15 !0.10
 targetFracIll0Liq0 	= 0.10 !0.12 !0.115
 
-lumptransfer = lumptransferpc*targetMeanIll
-
-!compute targetKY ratio
-la = -deprec 
-lb = targetMeanIll*deprec + (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N + ((1.0-1.0/elast)*(1.0-drs_Y) + (1.0/elast)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
-lc = - targetMeanIll* ( (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N
-target_K_totoutput_ratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
-
-!if solving for equilibrium, these are guesses
-
-cap_output = target_cap_output
-
-
-KYratio = targetKYratio 
-
-
-
-KNratio = (tfp*KYratio)**(1.0/(1.0-alpha))
-rcapital = mc*alpha/KYratio
-wage = mc*(1.0-alpha)*tfp*(KNratio**alpha)
-netwage = (1.0-labtax)*wage
-IF(DividendFundLumpSum==1) divrate = 0.0
-IF(DividendFundLumpSum==0) divrate =  (1.0-corptax)*(1.0-mc)/KYratio !outside of steady state include price adjustments
-IF(DistributeProfitsInProportion==1) divrate =  profdistfrac*divrate
-
-ra = rcapital - deprec
-
-! IF(NoLaborSupply==1) THEN
-! 	!scale efficiency units so that output euqals 1
-! 	meanlabeff = KYratio**(alpha/(alpha-1))
-! ELSE
-! 	!scale efficiency units so that average hours would be 1/3 in eqm if cov(z,h)=0
-! 	meanlabeff = (KYratio/KNratio)/(1.0/3.0)
-! END IF
-
-meanlabeff = 1.0
-frisch 		= 1.0 	!frisch elasticity labor supply
-
-IF(OneAssetNoCapital==1) THEN 
-	alpha = 0.0
-	profdistfrac = 0.0
-	rcapital = 0.0
-	wage = mc*(1.0-alpha)*tfp
-	netwage = (1.0-labtax)*wage
-	ra = 0.0
-	meanlabeff = 3.0
-	kappafc_w = 1.0e8
-	kappafc_d = 1.0e8
-	kappa0_w = 100.0
-	kappa0_d = 100.0
-	
-END IF
-
-!guess chi's so that at average wages and average consumption hours =1/3 (sets C/Y = 0.75)
-IF (NoLaborSupply==1)	chi	= 0.0 
-IF (LaborSupplySep==1)	chi	= meanlabeff / (0.75 **(-gam) * (1.0/3.0)**(1.0/frisch))
-IF (LaborSupplyGHH==1)	chi = meanlabeff / ((1.0/3.0)**(1.0/frisch)) 
-
-!requires an intial guess of profits if DistributeProfitsInProportion = 1, since output not known in advance
-IF(OneAssetNoCapital==0) THEN 
-	IF (LaborSupplySep==1) profit = (1.0-mc)*16.0/KYratio
-	IF (LaborSupplyGHH==1) profit = (1.0-mc)*14.0/KYratio
-	IF (NoLaborSupply==1) profit = (1.0-mc)*12.0/KYratio
-ELSE IF(OneAssetNoCapital==1) THEN 
-	profit = (1.0-mc)*1.0
-END IF
 
 
 

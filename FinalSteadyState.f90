@@ -52,12 +52,12 @@ ELSE IF(PermanentShock==1) THEN
 	solnFINALSS%gmat = gmat
 
 	CALL DistributionStatistics
-	equmINITSS = EquilibriumType(	ra,rborr,rcapital,wage,netwage,KYratio,KNratio,mc,rb,tfp,pi,rnom,gap,bond,capital,labor,output,investment,govexp,taxrev,govbond,worldbond,labtax,&
-									borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock,priceadjust,fundlev,elast,gam,fundbond,profit,dividend,divrate,lumptransfer,equity,caputil,deprec,tfpadj,&
-									illassetdrop,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,ygrid)
-	statsFINALSS = DistributionStatsType(Ea,Eb,Ec,Elabor,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Enw,FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
-										EbN,EbP,Eadjcost,PERCa,PERCb,PERCnw,PERCc,PERCinc,GINIa,GINIb,GINInw,GINIc,GINIinc, &
-										Ea_nwQ,Eb_nwQ,Ec_nwQ,Einc_nwQ,Ea_incQ,Eb_incQ,Ec_incQ,Einc_incQ,Ec_bN,Ec_b0close,Ec_b0far,Ec_nwQ_add)
+! 	equmINITSS = EquilibriumType(	ra,rborr,rcapital,wage,netwage,KYratio,KNratio,mc,rb,tfp,pi,rnom,gap,bond,capital,labor,output,investment,govexp,taxrev,govbond,worldbond,labtax,&
+! 									borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock,priceadjust,fundlev,elast,gam,fundbond,profit,dividend,divrate,lumptransfer,equity,caputil,deprec,tfpadj,&
+! 									illassetdrop,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,ygrid)
+! 	statsFINALSS = DistributionStatsType(Ea,Eb,Ec,Elabor,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Enw,FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
+! 										EbN,EbP,Eadjcost,PERCa,PERCb,PERCnw,PERCc,PERCinc,GINIa,GINIb,GINInw,GINIc,GINIinc, &
+! 										Ea_nwQ,Eb_nwQ,Ec_nwQ,Einc_nwQ,Ea_incQ,Eb_incQ,Ec_incQ,Einc_incQ,Ec_bN,Ec_b0close,Ec_b0far,Ec_nwQ_add)
 
 END IF
 

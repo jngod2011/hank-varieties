@@ -14,7 +14,7 @@ IF (Display>=1) write(*,*) 'Saving output to disk'
 !grids
 OPEN(3, FILE = trim(OutputDir) // 'agrid.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpa,1,agrid)
 OPEN(3, FILE = trim(OutputDir) // 'bgrid.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpb,1,bgrid)
-OPEN(3, FILE = trim(OutputDir) // 'ygrid.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpy,1,ygrid)
+OPEN(3, FILE = trim(OutputDir) // 'yprodgrid.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpy,1,yprodgrid)
 OPEN(3, FILE = trim(OutputDir) // 'adelta.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpa,1,adelta)
 OPEN(3, FILE = trim(OutputDir) // 'bdelta.txt', STATUS = 'replace'); CALL WriteMatrixLong(3,ngpb,1,bdelta)
 
@@ -34,19 +34,26 @@ OPEN(3, FILE = trim(OutputDir) // 'InitialSteadyStateParameters.txt', STATUS = '
 	write(3,*) 'kappa1_d ',kappa1_d
 	write(3,*) 'kappa2_d ',kappa2_d
 	write(3,*) 'kappa4_d ',kappa4_d
-	write(3,*) 'corptax ',corptax
 
+	write(3,*) 'output ',equmINITSS%output
+	write(3,*) 'varieties ',equmINITSS%varieties
+	write(3,*) 'totoutput ',equmINITSS%totoutput
 	write(3,*) 'ra ',equmINITSS%ra
 	write(3,*) 'rb ',equmINITSS%rb
 	write(3,*) 'rborr ',equmINITSS%rborr
+	write(3,*) 'borrwedge ',equmINITSS%borrwedge
+	write(3,*) 'rho ',equmINITSS%rho
 	write(3,*) 'rcapital ',equmINITSS%rcapital
-	write(3,*) 'wage ',equmINITSS%wage
-	write(3,*) 'netwage ',equmINITSS%netwage
+	write(3,*) 'wage_Y ',equmINITSS%wage_Y
+	write(3,*) 'wage_N ',equmINITSS%wage_N
 	write(3,*) 'bond ',equmINITSS%bond
 	write(3,*) 'capital ',equmINITSS%capital
-	write(3,*) 'equity ',equmINITSS%equity
-	write(3,*) 'labor ',equmINITSS%labor
-	write(3,*) 'output ',equmINITSS%output
+	write(3,*) 'capital_Y ',equmINITSS%capital_Y
+	write(3,*) 'capital_N ',equmINITSS%capital_N
+	write(3,*) 'equity_A ',equmINITSS%equity_A
+	write(3,*) 'equity_B ',equmINITSS%equity_B
+	write(3,*) 'labor_Y ',equmINITSS%labor_Y
+	write(3,*) 'labor_N ',equmINITSS%labor_N
 	write(3,*) 'investment ',equmINITSS%investment
 	write(3,*) 'govexp ',equmINITSS%govexp
 	write(3,*) 'lumptransfer ',equmINITSS%lumptransfer
@@ -54,30 +61,34 @@ OPEN(3, FILE = trim(OutputDir) // 'InitialSteadyStateParameters.txt', STATUS = '
 	write(3,*) 'taxrev ',equmINITSS%taxrev
 	write(3,*) 'govbond ',equmINITSS%govbond
 	write(3,*) 'worldbond ',equmINITSS%worldbond
-	write(3,*) 'fundbond ',equmINITSS%fundbond
-	write(3,*) 'KYratio ',equmINITSS%KYratio
-	write(3,*) 'KNratio ',equmINITSS%KNratio
-	write(3,*) 'mc ',equmINITSS%mc
-	write(3,*) 'rb ',equmINITSS%rb
-	write(3,*) 'tfp ',equmINITSS%tfp
+	write(3,*) 'mc_Y ',equmINITSS%mc_Y
+	write(3,*) 'mc_N ',equmINITSS%mc_N
+	write(3,*) 'tfp_Y ',equmINITSS%tfp_Y
+	write(3,*) 'tfp_N ',equmINITSS%tfp_N
 	write(3,*) 'pi ',equmINITSS%pi
 	write(3,*) 'rnom ',equmINITSS%rnom
 	write(3,*) 'priceadjust ',equmINITSS%priceadjust
 	write(3,*) 'profit ',equmINITSS%profit
-	write(3,*) 'dividend ',equmINITSS%dividend
-	write(3,*) 'divrate ',equmINITSS%divrate
-
-	write(3,*) 'borrwedge ',equmINITSS%borrwedge
-	write(3,*) 'rho ',equmINITSS%rho
-	write(3,*) 'fundlev ',equmINITSS%fundlev
+	write(3,*) 'grossprofit_R ',equmINITSS%grossprofit_R
+	write(3,*) 'netprofit_R ',equmINITSS%netprofit_R
+	write(3,*) 'grossprofit_W ',equmINITSS%grossprofit_W
+	write(3,*) 'netprofit_W ',equmINITSS%netprofit_W
+	write(3,*) 'dividend_A ',equmINITSS%dividend_A
+	write(3,*) 'dividend_B ',equmINITSS%dividend_B
+	write(3,*) 'corptax ',corptax
 	write(3,*) 'deprec ',deprec
-	write(3,*) 'alpha ',alpha
+	write(3,*) 'alpha_Y ',alpha_Y
+	write(3,*) 'alpha_N ',alpha_N
 	
 	write(3,*) 'Ea ',statsINITSS%Ea
 	write(3,*) 'Eb ',statsINITSS%Eb
 	write(3,*) 'Ec ',statsINITSS%Ec
 	write(3,*) 'Ehours ',statsINITSS%Ehours
+	write(3,*) 'Ehours_Y ',statsINITSS%Ehours_Y
+	write(3,*) 'Ehours_N ',statsINITSS%Ehours_N
 	write(3,*) 'Elabor ',statsINITSS%Elabor
+	write(3,*) 'Elabor_Y ',statsINITSS%Elabor_Y
+	write(3,*) 'Elabor_N ',statsINITSS%Elabor_N
 	write(3,*) 'Ed ',statsINITSS%Ed
 	write(3,*) 'Ewage ',statsINITSS%Ewage
 	write(3,*) 'Enetlabinc ',statsINITSS%Enetlabinc

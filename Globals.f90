@@ -10,7 +10,7 @@ character(len=300)  InputParamFile,FeedPriceFile
 !OPTIONS GLOBALS
 integer	:: Display, ReportNonMonotonicity, NoLaborSupply,LaborSupplySep,LaborSupplyGHH,EquilibriumR, CalibrateCostFunction, DoImpulseResponses,CalibrateDiscountRate,SaveCumPolicyFnsIRF,ComputeDiscountedMPC,DoFeedInPrices
 integer	:: PermanentShock, SolveFlexPriceTransition, SolveStickyPriceTransition, SolveZLBTransition, FirmDiscountRate, ImposeEqumInCalibration,UpdateFlexUsingBond, OppositeWorldBondFunction
-integer :: ComputeCumulativeMPC, ScaleDisutilityIdio,SaveTransitionPolicyFns,SaveTime1PolicyFns,UseFlexTransitionAsGuess,DoPriceExperiments,DistributeProfitsInProportion,TaxHHProfitIncome
+integer :: ComputeCumulativeMPC, ScaleDisutilityIdio,SaveTransitionPolicyFns,SaveTime1PolicyFns,UseFlexTransitionAsGuess,DoPriceExperiments,TaxHHProfitIncome
 integer :: BackwardTermInTaylorRule,FixProfitsOutOfSteadyState,AdjGovBudgetConstraint,ConvergenceRelToOutput,AdjustProdGridFrisch,FixBorrowRateTransition,WhichPriceExperiment(16)
 integer :: GovExpConstantFracOutput,GovBondResidualZeroWorld,ExponAdjustConstFn,Kappa3LinearOrMax,PinKappa1ByKappa02,ImposeMaxHours,OneAssetNoCapital,GovBCFDScheme
 integer :: ReadEarningsProcess,StickyPriceAlgorithm,ZLBAlgorithm,PerfectAnnuityMarkets,CalibrateRhoAtInitialGuess,FixedValueForD,NoChangeLabDisutility,TransitionTimeStepType
@@ -39,7 +39,6 @@ logical :: forwardguide,monetaryshock,prodispshock,nblviolated
 
 
 !GRIDS GLOBALS
-real(8), dimension(ngpy) 		:: ygrid,logygrid,profsharegrid		!individual productivity
 real(8), dimension(ngpa)  		:: agrid,adelta,adrift        !illiquid asset
 real(8), dimension(ngpb)  		:: bgrid,bdelta,bdrift        !liquid asset
 real(8), dimension(nab)  		:: abdelta
@@ -51,9 +50,17 @@ integer, dimension(ngpa,ngpb)  		:: abfromab
 real(8), dimension(ngpb-1)  		:: dbgrid        !liquid asset spacing
 real(8), dimension(ngpa-1)  		:: dagrid        !illiquid asset spacing
 
-!GLOBALS FOR INCOME RISK
-real(8), dimension(ngpy)		    :: ydist
+
+!GLOBALS FOR PRODUCTIVITY AND OCCOUPATION PROCESS
+real(8), dimension(ngpy) 		:: yprodgrid,yoccgrid,profsharegrid,ydist,netwagegrid		!individual productivity
+real(8), dimension(ngpprod) 		:: prodgrid,logprodgrid,proddist
+real(8), dimension(ngpocc) 		:: occgrid,occdist
+
+integer, dimension(ngpy)	  		:: occfromy,prodfromy
+integer, dimension(ngpocc,ngpprod)	  	:: yfromoccprod
+
 real(8), dimension(ngpy,ngpy)		:: ytrans,ymarkov,ymarkovdiag,ymarkovoff
+real(8), dimension(ngpprod,ngpprod)		:: prodtrans,prodmarkov
 
 !GLOBALS FOR VALUE FUNCTIONS AND DECISION
 real(8), dimension(:,:,:), allocatable		:: V,Vnew,u,gjoint,c,h,d,s,ccum1,ccum4,ccum2,dcum1,dcum4,dcum2,bdot,mpc,subeff1ass,subeff2ass,wealtheff1ass,wealtheff2ass
@@ -66,19 +73,21 @@ real(8) :: delta
 !PARAMETER GLOBALS
 real(8)     :: rho,gam,utilcost,chi,frisch,blim,nbl,abl,prefshock,deathrate,meanlabeff
 real(8)     :: profdistfracA,profdistfracB,profdistfracW,profdistfracL
-real(8)     :: elast,alpha,deprec,alphatilde,theta,phitaylor,phifg,bondelast,borrwedge,mpshock,bondadjust,bondelastrelgdp,taylorpers
+real(8)     :: elast,alpha_Y,alpha_N,drs_Y,drs_N,deprec,priceadjcost,phitaylor,phifg,bondelast,borrwedge,mpshock,bondadjust,bondelastrelgdp,taylorpers
 real(8) 	:: kappa0_d,kappa1_d,kappa2_d,kappafc_d,kappa0_w,kappa1_w,kappa2_w,kappafc_w,kappa3,kappa4_d,kappa4_w
 real(8) 	:: dmin,taxincrstart,taxincrdecay,housedeprec,dexog,utilelast,utilelastalpha,fixnomgovdebt
 real(8) 	:: bondprefweight,bondgam,mpshockimpact
 
 !EQUILIBRIUM GLOBALS
-real(8)     :: ra,rborr,rcapital,wage,netwage,KYratio,KNratio,mc,rb,tfp,pi,rnom,gap,bond,capital,labor,output,investment,govexp,taxrev,govbond,worldbond,profit,dividend,divrate,priceadjust,equity
-real(8)     :: labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,illassetdrop,caputil,tfpadj,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale
+real(8)     :: ra,rborr,rcapital,rb,pi,rnom,gap,bond,investment,govexp,taxrev,govbond,worldbond,profit,priceadjust
+real(8)     :: totoutput,varieties,output,capital,K_totoutput_ratio,equity_A,equity_B,dividend_A,dividend_B
+real(8)     :: capital_Y,labor_Y,wage_Y,mc_Y,tfp_Y,capital_N,labor_N,wage_N,mc_N,tfp_N,price_W,grossprofit_W,netprofit_W,grossprofit_R,netprofit_R
+real(8)     :: labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,illassetdrop,caputil,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale
 integer 	:: neqmiter
 logical		:: converged,initialSS
 
 !STATISTICS GLOBALS
-real(8) 	:: Ea,Eb,Ec,Elabor,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Enw,EbN,EbP,Eadjcost
+real(8) 	:: Ea,Eb,Ec,Elabor,Elabor_N,Elabor_Y,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Ehours_N,Ehours_Y,Enw,EbN,EbP,Eadjcost
 real(8) 	:: FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close
 real(8) 	:: PERCa(11),PERCb(11),PERCnw(11),PERCc(11),PERCinc(11)
 real(8) 	:: GINIa,GINIb,GINInw,GINIc,GINIinc
@@ -88,7 +97,7 @@ real(8)		:: Ec_bN,Ec_b0close,Ec_b0far
 !CALIBRATION GLOBALS
 integer					:: nparam,nmoments,objeval,ndfls
 real(8), allocatable	:: paramguess(:),paramout(:),paramscale(:),paramlb(:),paramub(:),diagweight(:),nobsvec(:)
-real(8)		:: targetMeanIll,targetMeanLiq,targetMedianIll,targetP75Ill,targetMedianLiq,targetFracIll0,targetFracLiq0,targetFracIll0Liq0,targetFracLiqNEG,targetKYratio
+real(8)		:: targetMeanIll,targetMeanLiq,targetMedianIll,targetP75Ill,targetMedianLiq,targetFracIll0,targetFracLiq0,targetFracIll0Liq0,targetFracLiqNEG,target_K_totoutput_ratio
 real(8)		:: modelMeanIll,modelMeanLiq,modelMedianIll,modelP75Ill,modelMedianLiq,modelFracIll0,modelFracLiq0,modelFracIll0Liq0,modelFracLiqNEG,modelKYratio
 real(8) 	:: kappa2min,borrwedgemax
 
@@ -127,8 +136,14 @@ type(SolutionType)		:: solnINITSS,solnFINALSS,solnTRANS(Ttransition)
 
 !EQUILIBRIUM TYPE
 type EquilibriumType
-	real(8)		:: ra,rborr,rcapital,wage,netwage,KYratio,KNratio,mc,rb,tfp,pi,rnom,gap,bond,capital,labor,output,investment,govexp,taxrev,govbond,worldbond,labtax,borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock,&
-					priceadjust,fundlev,elast,gam,fundbond,profit,dividend, divrate,lumptransfer,equity,caputil,deprec,tfpadj,illassetdrop,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,ygrid(ngpy)
+! 	real(8)		:: ra,rborr,rcapital,wage,netwage,KYratio,KNratio,mc,rb,tfp,pi,rnom,gap,bond,capital,labor,output,investment,govexp,taxrev,govbond,worldbond,labtax,borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock,&
+! 					priceadjust,fundlev,elast,gam,fundbond,profit,dividend, lumptransfer,equity,caputil,deprec,tfpadj,illassetdrop,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,yprodgrid(ngpy)
+	real(8)     :: ra,rborr,rcapital,rb,pi,rnom,gap,bond,investment,govexp,taxrev,govbond,worldbond,profit,priceadjust,totoutput,varieties,output,&
+					capital,K_totoutput_ratio,equity_A,equity_B,dividend_A,dividend_B,capital_Y,labor_Y,wage_Y,mc_Y,tfp_Y,capital_N,labor_N,wage_N,mc_N,tfp_N,price_W, &
+					grossprofit_W,netprofit_W,grossprofit_R,netprofit_R,labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,illassetdrop,caputil,&
+					govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,yprodgrid(ngpy),&
+					borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock
+
 end type
 
 type(EquilibriumType)	:: equmINITSS,equmFINALSS,equmTRANS(Ttransition)
@@ -136,7 +151,8 @@ type(EquilibriumType)	:: equmINITSS,equmFINALSS,equmTRANS(Ttransition)
 
 !DISTRIBUTION STATISTICS TYPE
 type DistributionStatsType
-	real(8) 	:: Ea,Eb,Ec,Elabor,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Enw,FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
+	real(8) 	:: Ea,Eb,Ec,Elabor,Elabor_N,Elabor_Y,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Ehours_N,Ehours_Y,Enw, &
+					FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
 					EbN,EbP,Eadjcost,PERCa(11),PERCb(11),PERCnw(11),PERCc(11),PERCinc(11),GINIa,GINIb,GINInw,GINIc,GINIinc, &
 					Ea_nwQ(4),Eb_nwQ(4),Ec_nwQ(4),Einc_nwQ(4),Ea_incQ(4),Eb_incQ(4),Ec_incQ(4),Einc_incQ(4),Ec_bN,Ec_b0close,Ec_b0far,Ec_nwQ_add(12)
 end type

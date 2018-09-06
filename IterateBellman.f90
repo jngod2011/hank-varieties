@@ -33,11 +33,11 @@ IF	(	(EquilibriumR==0 .and. calibrating==.false.) &
 	
 	!$OMP PARALLEL DO PRIVATE (ladrift,lh,lc,llabdisutil)
 	DO iaby = 1,naby
-		IF(LaborSupplyGHH==1) 	lh = (netwage*ygrid(yfromaby(iaby)))**frisch
+		IF(LaborSupplyGHH==1) 	lh = (netwagegrid(yfromaby(iaby)))**frisch
 		IF(LaborSupplySep==1) 	lh = 1.0/3.0
 		IF(NoLaborSupply==1) 	lh = 1.0
   		ladrift = (ra + PerfectAnnuityMarkets*deathrate)*agrid(afromaby(iaby))
-		lc = netwage*ygrid(yfromaby(iaby))*lh + lumptransfer + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby))
+		lc = netwagegrid(yfromaby(iaby))*lh + lumptransfer + (rb+PerfectAnnuityMarkets*deathrate)*bgrid(bfromaby(iaby))
 		llabdisutil = lh**(1.0+1.0/frisch)/(1.0+1.0/frisch)	
 		IF(NoLaborSupply==1 .or. LaborSupplyGHH==1)V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = utilfn(lc)  / (rho+deathrate)
 		IF(LaborSupplySep==1)V(afromaby(iaby),bfromaby(iaby),yfromaby(iaby)) = (utilfn(lc) - chi*llabdisutil) / (rho+deathrate)

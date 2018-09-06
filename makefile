@@ -7,6 +7,10 @@ debug:
 	make -f debug.makefile
 	dsymutil $(OUT).out
 
+sstest:
+	make -f sstest.makefile
+	# dsymutil $(OUT).out
+
 hpcrelease:
 	make -f hpcrelease.makefile
 

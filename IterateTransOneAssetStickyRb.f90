@@ -132,15 +132,15 @@ END IF
 !final period of transition
 it = Ttransition
 equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmFINALSS%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
-										- (equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * theta/ equmTRANS(it)%elast &
-										+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * theta/ equmTRANS(it)%elast
+										- (equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * priceadjcost/ equmTRANS(it)%elast &
+										+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
 equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
 
 !solve backwards
 DO it = Ttransition-1,1,-1
 	equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmTRANS(it+1)%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
-											- (equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * theta/ equmTRANS(it)%elast &
-											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * theta/ equmTRANS(it)%elast
+											- (equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * priceadjcost/ equmTRANS(it)%elast &
+											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
 	equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
 
 END DO
@@ -149,7 +149,7 @@ equmTRANS(:)%gap = equmTRANS(:)%elast*equmTRANS(:)%mc / (equmTRANS(:)%elast-1.0)
 equmTRANS(:)%wage = equmTRANS(:)%mc*(1.0-alpha)* equmTRANS(:)%tfpadj
 equmTRANS(:)%netwage = (1.0-equmTRANS(:)%labtax)*equmTRANS(:)%wage
 equmTRANS(:)%output = equmTRANS(:)%tfp * equmTRANS(:)%labor
-equmTRANS(:)%priceadjust = (theta/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%output
+equmTRANS(:)%priceadjust = (priceadjcost/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%output
 equmTRANS(:)%profit = (1.0-equmTRANS(:)%mc)*equmTRANS(:)%output - equmTRANS(:)%priceadjust
 
 	
@@ -344,15 +344,15 @@ DO WHILE (ii<=maxitertranssticky .and. ldiffB>toltransition )
 	!final period of transition
 	it = Ttransition
 	equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmFINALSS%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
-											- (equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * theta/ equmTRANS(it)%elast &
-											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * theta/ equmTRANS(it)%elast
+											- (equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * priceadjcost/ equmTRANS(it)%elast &
+											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
 	equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
 
 	!solve backwards
 	DO it = Ttransition-1,1,-1
 		equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmTRANS(it+1)%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
-												- (equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * theta/ equmTRANS(it)%elast &
-												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * theta/ equmTRANS(it)%elast
+												- (equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * priceadjcost/ equmTRANS(it)%elast &
+												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
 		equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
 
 	END DO
@@ -361,7 +361,7 @@ DO WHILE (ii<=maxitertranssticky .and. ldiffB>toltransition )
 	equmTRANS(:)%wage = equmTRANS(:)%mc*(1.0-alpha)* equmTRANS(:)%tfpadj
 	equmTRANS(:)%netwage = (1.0-equmTRANS(:)%labtax)*equmTRANS(:)%wage
 	equmTRANS(:)%output = equmTRANS(:)%tfp * equmTRANS(:)%labor
-	equmTRANS(:)%priceadjust = (theta/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%output
+	equmTRANS(:)%priceadjust = (priceadjcost/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%output
 	equmTRANS(:)%profit = (1.0-equmTRANS(:)%mc)*equmTRANS(:)%output - equmTRANS(:)%priceadjust
 
 

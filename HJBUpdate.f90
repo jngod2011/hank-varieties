@@ -44,13 +44,15 @@ DO iaby = 1,naby
 	IF (ib>1) lVbB = max(lVbB,dVbmin)
 	
 	
-	gidioprod = ygrid(iy)
-	IF(prodispshock==.true.) gidioprodss = equmINITSS%ygrid(iy)
-! 	IF(prodispshock==.true.) gidioscale = gidioprod/gidioprodSS
-	gnetwage = netwage*gidioprod
-	gbdrift = bdrift(ib) + lumptransfer
-	IF(DistributeProfitsInProportion==1 .and. TaxHHProfitIncome==0) gbdrift = gbdrift + (1.0-profdistfrac)*(1.0-corptax)*profit*profsharegrid(iy)
-	IF(DistributeProfitsInProportion==1 .and. TaxHHProfitIncome==1) gbdrift = gbdrift + (1.0-labtax)*(1.0-profdistfrac)*(1.0-corptax)*profit*profsharegrid(iy)
+	gidioprod = yprodgrid(iy)
+	IF(prodispshock==.true.) gidioprodss = equmINITSS%yprodgrid(iy)
+	IF(prodispshock==.true.) gidioscale = gidioprod/gidioprodSS
+	gnetwage = netwagegrid(iy)
+	
+	gbdrift = bdrift(ib) + lumptransfer  + profdistfracL*(1.0-corptax)*profit
+	IF(TaxHHProfitIncome==0) gbdrift = gbdrift + profdistfracW*(1.0-corptax)*profit*profsharegrid(iy)
+	IF(TaxHHProfitIncome==1) gbdrift = gbdrift + (1.0-labtax)*profdistfracW*(1.0-corptax)*profit*profsharegrid(iy)
+	
 	gill = agrid(ia)
 	
 	!consumption decision
@@ -112,9 +114,9 @@ DO iaby = 1,naby
  		IF (ib==1) THEN
 			IF(ScaleDisutilityIdio==0) THEN
 				IF(prodispshock==.false. .or. ProdDispScaleDisutilty==0) llabdisutil = lhB**(1.0+1.0/frisch)/(1.0+1.0/frisch)
-				IF(prodispshock==.true. .and. ProdDispScaleDisutilty==1) llabdisutil =  (ygrid(iy)/equmINITSS%ygrid(iy)) * lhB**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+				IF(prodispshock==.true. .and. ProdDispScaleDisutilty==1) llabdisutil =  (yprodgrid(iy)/equmINITSS%yprodgrid(iy)) * lhB**(1.0+1.0/frisch)/(1.0+1.0/frisch)
 			END IF	
-			IF(ScaleDisutilityIdio==1) llabdisutil = ygrid(iy)*lhB**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+			IF(ScaleDisutilityIdio==1) llabdisutil = yprodgrid(iy)*lhB**(1.0+1.0/frisch)/(1.0+1.0/frisch)
 			IF(NoLaborSupply==1 .or. LaborSupplySep==1) lVbB = utilfn1(lcB)
 			IF(LaborSupplyGHH==1) lVbB = utilfn1(lcB-(chi/labwedge)*llabdisutil)
 		END IF
@@ -146,7 +148,7 @@ DO iaby = 1,naby
 		IF(prodispshock==.false. .or. ProdDispScaleDisutilty==0) llabdisutil = h(ia,ib,iy)**(1.0+1.0/frisch)/(1.0+1.0/frisch)
 		IF(prodispshock==.true. .and. ProdDispScaleDisutilty==1) llabdisutil = (gidioprod/gidioprodSS)*h(ia,ib,iy)**(1.0+1.0/frisch)/(1.0+1.0/frisch)
 	END IF
-	IF (ScaleDisutilityIdio==1) llabdisutil = ygrid(iy)*h(ia,ib,iy)**(1.0+1.0/frisch)/(1.0+1.0/frisch)
+	IF (ScaleDisutilityIdio==1) llabdisutil = yprodgrid(iy)*h(ia,ib,iy)**(1.0+1.0/frisch)/(1.0+1.0/frisch)
 	IF(LaborSupplySep==1) u(ia,ib,iy) = utilfn(c(ia,ib,iy)) - (chi/labwedge)*llabdisutil
 	IF(LaborSupplyGHH==1) u(ia,ib,iy) = utilfn(c(ia,ib,iy) - (chi/labwedge)*llabdisutil)
 	bdot(ia,ib,iy) = s(ia,ib,iy)-d(ia,ib,iy)- adjcostfn(d(ia,ib,iy),agrid(ia))

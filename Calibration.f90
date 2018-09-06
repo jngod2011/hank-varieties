@@ -252,30 +252,30 @@ END IF
 
 calibrating = .false.
 
-!implied aggregate statistics: note that lump transfer is based on output=1.5, not actual output
-bond = Eb
-investment = deprec*capital
-priceadjust = 0.0
-profit = (1.0-mc)*capital/KYratio - priceadjust
-IF(DistributeProfitsInProportion==0) dividend = profit*(1.0-corptax)
-IF(DistributeProfitsInProportion==1) dividend = profdistfrac*profit*(1.0-corptax)
-output = tfp*(capital**alpha)*(labor**(1.0-alpha))
-fundbond = -capital*fundlev
-bondelast = bondelastrelgdp*output
-caputil 	= 1.0
-tfpadj = ((tfp**(1.0+utilelast)) * (mc*alpha/rcapital)**(alpha*utilelast))**(1.0/utilelastalpha)
-taxrev = labtax*wage*labor - lumptransfer + corptax*profit
-IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) taxrev = taxrev + labtax*(1.0-profdistfrac)*profit*(1.0-corptax)
-
-
-IF(GovBondResidualZeroWorld==0) THEN
-	govbond = -ssdebttogdp*output
-	govexp = taxrev + rb*govbond 
-	worldbond = -bond-govbond-fundbond
-ELSE IF(GovBondResidualZeroWorld==1) THEN
-	worldbond = 0.0
-	govbond = -bond-worldbond-fundbond
-	govexp = taxrev + rb*govbond		
-END IF
+! !implied aggregate statistics: note that lump transfer is based on output=1.5, not actual output
+! bond = Eb
+! investment = deprec*capital
+! priceadjust = 0.0
+! profit = (1.0-mc)*capital/KYratio - priceadjust
+! IF(DistributeProfitsInProportion==0) dividend = profit*(1.0-corptax)
+! IF(DistributeProfitsInProportion==1) dividend = profdistfrac*profit*(1.0-corptax)
+! output = tfp*(capital**alpha)*(labor**(1.0-alpha))
+! fundbond = -capital*fundlev
+! bondelast = bondelastrelgdp*output
+! caputil 	= 1.0
+! tfpadj = ((tfp**(1.0+utilelast)) * (mc*alpha/rcapital)**(alpha*utilelast))**(1.0/utilelastalpha)
+! taxrev = labtax*wage*labor - lumptransfer + corptax*profit
+! IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) taxrev = taxrev + labtax*(1.0-profdistfrac)*profit*(1.0-corptax)
+!
+!
+! IF(GovBondResidualZeroWorld==0) THEN
+! 	govbond = -ssdebttogdp*output
+! 	govexp = taxrev + rb*govbond
+! 	worldbond = -bond-govbond-fundbond
+! ELSE IF(GovBondResidualZeroWorld==1) THEN
+! 	worldbond = 0.0
+! 	govbond = -bond-worldbond-fundbond
+! 	govexp = taxrev + rb*govbond
+! END IF
 
 END SUBROUTINE Calibration

@@ -8,13 +8,14 @@ IMPLICIT NONE
 
 INTEGER			:: ia,ib,iy,iaby,iab,io,ip,iy2,io2,ip2
 REAL(8)         :: lmean
-REAL(8)         :: leye(ngpy,ngpy)
+REAL(8)         :: leye(ngpprod,ngpprod)
 
 REAL(8), EXTERNAL :: golden
 
 !identity matrix
-leye = 0.0; DO iy = 1,ngpy
-	leye(iy,iy) = 1.0
+leye = 0.0; 
+DO ip = 1,ngpprod
+	leye(ip,ip) = 1.0
 END DO
 
 !create occ, prod indices
@@ -40,7 +41,7 @@ ELSE IF (ReadEarningsProcess==1) THEN
 	OPEN(1, FILE = trim(EarningsProcessDir) // '/ygrid_combined.txt');READ(1,*) logprodgrid;CLOSE(1)
 	OPEN(1, FILE = trim(EarningsProcessDir) // '/ydist_combined.txt');READ(1,*) proddist;CLOSE(1)
 	OPEN(1, FILE = trim(EarningsProcessDir) // '/ymarkov_combined.txt');READ(1,*) prodmarkov;CLOSE(1)
-	IF (AdjustProdGridFrisch==1) logygrid = logygrid/ (1.0+adjfricshgridfrac*frisch)
+	IF (AdjustProdGridFrisch==1) logprodgrid = logprodgrid/ (1.0+adjfricshgridfrac*frisch)
 	prodgrid = exp(logprodgrid)
 	prodmarkov = TRANSPOSE(prodmarkov) !since fortran reads in column major order	
 	!fix up rounding in markov matrix
@@ -71,7 +72,7 @@ prodgrid = meanlabeff*prodgrid/lmean
 IF(ngpocc==1) THEN
 	occgrid = 0.5
 	occdist = 1.0
-	ELSE !equally spaced [0,1]
+ELSE !equally spaced [0,1]
 	occgrid(1) = 0.0
 	occgrid(ngpocc) = 1.0
 	IF(ngpocc>=2) THEN
@@ -91,12 +92,12 @@ DO iy = 1,ngpy
 	ip = prodfromy(iy)
 	yprodgrid(iy) = prodgrid(ip)
 	yoccgrid(iy) = occgrid(io)
-	ydidst(iy) = proddist(ip)*occdist(io)
-	DO iy2 = 1,ngpy2
+	ydist(iy) = proddist(ip)*occdist(io)
+	DO iy2 = 1,ngpy
 		io2 = occfromy(iy2)
 		ip2 = prodfromy(iy2)
 		IF (io==io2) THEN
-			ymarkvov(iy,iy2) = prodmarkov(ip,ip2)
+			ymarkov(iy,iy2) = prodmarkov(ip,ip2)
 		END IF
 	END DO
 END DO		

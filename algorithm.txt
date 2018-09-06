@@ -13,8 +13,8 @@ totoutput = output*varieties
 	tfp_Y = output / (((capital_Y**alpha_Y)*(labor_Y**(1.0-alpha_Y))) ** drs_Y)
 	tfp_N = varieties / (((capital_N**alpha_N)*(labor_N**(1.0-alpha_N))) ** drs_N)
 
-	wage_N = (1.0/elast)*(1.0-alpha_N)*theta_N*totoutput/labor_N
-	wage_Y = (1.0-1.0/elast)*(1.0-alpha_Y)*theta_Y*output/labor_Y
+	wage_N = (1.0/elast)*(1.0-alpha_N)*drs_N*totoutput/labor_N
+	wage_Y = (1.0-1.0/elast)*(1.0-alpha_Y)*drs_Y*output/labor_Y
 
 	mc_N = (1.0/tfp_N)*((rcapital/alpha_N)**alpha_N) *((wage_N/(1.0-alpha_N)**(1.0-alpha_N))
 	mc_Y = (1.0/tfp_Y)*((rcapital/alpha_Y)**alpha_Y) *((wage_Y/(1.0-alpha_Y)**(1.0-alpha_Y))
@@ -38,7 +38,7 @@ update using K_totoutput_ratio = Ea - equityA /tot_output
 labor_Y = Ehours_Y
 labor_N = Ehours_N
 
-For calibrating rho, can just use labor from last iteration
+For calibrating rho in partial equilibrium, just use labor from last iteration
 get Ehours_Y Ehours_N Ea
 
 Outside of steady state. Iterate over K_totoutput_ratio and inflation.

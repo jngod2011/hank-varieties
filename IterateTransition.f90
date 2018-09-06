@@ -143,8 +143,8 @@ ELSE IF (flextransition == .false.) THEN
 	equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmFINALSS%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
 											- alpha*(equmFINALSS%capital-equmTRANS(it)%capital)/(equmTRANS(it)%capital*deltatransvec(it)) &
 											- alpha*(equmFINALSS%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
-											- (1.0-alpha)*(equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * theta/ equmTRANS(it)%elast &
-											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * theta/ equmTRANS(it)%elast
+											- (1.0-alpha)*(equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * priceadjcost/ equmTRANS(it)%elast &
+											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
 	equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
 
 	!solve backwards
@@ -152,8 +152,8 @@ ELSE IF (flextransition == .false.) THEN
 		equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmTRANS(it+1)%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
 												- alpha*(equmTRANS(it+1)%capital-equmTRANS(it)%capital)/(equmTRANS(it)%capital*deltatransvec(it)) &
 												- alpha*(equmTRANS(it+1)%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
-												- (1.0-alpha)*(equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * theta/ equmTRANS(it)%elast &
-												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * theta/ equmTRANS(it)%elast
+												- (1.0-alpha)*(equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * priceadjcost/ equmTRANS(it)%elast &
+												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
 		equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
 
 	END DO
@@ -173,7 +173,7 @@ equmTRANS(:)%output = equmTRANS(:)%tfpadj * (equmTRANS(:)%capital**(alpha/utilel
 equmTRANS(:)%KYratio = (equmTRANS(:)%KNratio**(1.0-alpha)) / (equmTRANS(:)%tfp* (equmTRANS(:)%caputil**alpha))
 equmTRANS(:)%rcapital = ((equmINITSS%rcapital**utilelast) * equmTRANS(:)%mc * alpha / equmTRANS(:)%KYratio ) ** (1.0/(1.0+utilelast))
 IF (flextransition == .true.) equmTRANS(:)%priceadjust = 0.0
-IF (flextransition == .false.) equmTRANS(:)%priceadjust = (theta/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%capital/equmTRANS(:)%KYratio
+IF (flextransition == .false.) equmTRANS(:)%priceadjust = (priceadjcost/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%capital/equmTRANS(:)%KYratio
 equmTRANS(:)%profit = (1.0-equmTRANS(:)%mc)*equmTRANS(:)%capital/equmTRANS(:)%KYratio - equmTRANS(:)%priceadjust
 
 equmTRANS(:)%deprec = equmINITSS%deprec + (utilelast*equmINITSS%rcapital/(1.0+ utilelast)) * ((equmTRANS(:)%rcapital/equmINITSS%rcapital)**(1.0+utilelast) -1.0)
@@ -486,8 +486,8 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 		equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmFINALSS%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
 												- alpha*(equmFINALSS%capital-equmTRANS(it)%capital)/(equmTRANS(it)%capital*deltatransvec(it)) &
 												- alpha*(equmFINALSS%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
-												- (1.0-alpha)*(equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * theta/ equmTRANS(it)%elast &
-												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * theta/ equmTRANS(it)%elast
+												- (1.0-alpha)*(equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * priceadjcost/ equmTRANS(it)%elast &
+												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
 		equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
 
 		!solve backwards
@@ -495,8 +495,8 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 			equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmTRANS(it+1)%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
 													- alpha*(equmTRANS(it+1)%capital-equmTRANS(it)%capital)/(equmTRANS(it)%capital*deltatransvec(it)) &
 													- alpha*(equmTRANS(it+1)%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
-													- (1.0-alpha)*(equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * theta/ equmTRANS(it)%elast &
-													+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * theta/ equmTRANS(it)%elast
+													- (1.0-alpha)*(equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * priceadjcost/ equmTRANS(it)%elast &
+													+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
 			equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
 
 		END DO
@@ -516,7 +516,7 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 	equmTRANS(:)%KYratio = (equmTRANS(:)%KNratio**(1.0-alpha)) / (equmTRANS(:)%tfp* (equmTRANS(:)%caputil**alpha))
 	equmTRANS(:)%rcapital = ((equmINITSS%rcapital**utilelast) * equmTRANS(:)%mc * alpha / equmTRANS(:)%KYratio ) ** (1.0/(1.0+utilelast))
 	IF (flextransition == .true.) equmTRANS(:)%priceadjust = 0.0
-	IF (flextransition == .false.) equmTRANS(:)%priceadjust = (theta/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%capital/equmTRANS(:)%KYratio
+	IF (flextransition == .false.) equmTRANS(:)%priceadjust = (priceadjcost/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%capital/equmTRANS(:)%KYratio
 	equmTRANS(:)%profit = (1.0-equmTRANS(:)%mc)*equmTRANS(:)%capital/equmTRANS(:)%KYratio - equmTRANS(:)%priceadjust
 
 	equmTRANS(:)%deprec = equmINITSS%deprec + (utilelast*equmINITSS%rcapital/(1.0+ utilelast)) * ((equmTRANS(:)%rcapital/equmINITSS%rcapital)**(1.0+utilelast) -1.0)

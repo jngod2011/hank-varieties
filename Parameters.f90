@@ -3,7 +3,7 @@ IMPLICIT NONE
 SAVE
 
 !OPTIONS
-integer,parameter  ::  TwoPointWageProcess 		= 0	!set ngpy=2
+integer,parameter  ::  TwoPointWageProcess 		= 1	!set ngpy=2
 integer,parameter  ::  Borrowing				= 1
 
 !GRID SIZES

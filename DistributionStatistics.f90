@@ -7,7 +7,7 @@ USE Procedures
 IMPLICIT NONE
 
 INTEGER			:: ia,ib,iy,iaby,ip,iab
-REAL(8), DIMENSION(naby) :: la,lb,lc,ld,lwage,lnetlabinc,lgrosslabinc,ladelta,lbdelta,lhours,ladjcost,lgrossinc,lnw,llabor,lgrossprofinc,lnetprofinc
+REAL(8), DIMENSION(naby) :: la,lb,lc,ld,lwage,lnetlabinc,lgrosslabinc,ladelta,lbdelta,lhours,lhours_N,lhours_Y,ladjcost,lgrossinc,lnw,llabor,llabor_N,llabor_Y,lgrossprofinc,lnetprofinc
 REAL(8)	:: lbmargdist(ngpb),lamargdist(ngpa),lbmargcum(ngpb),lamargcum(ngpa),lpvec(11),linterp1,linterp2
 INTEGER, DIMENSION(nab)		:: ordernw
 REAL(8), DIMENSION(nab)		:: lnwmargdist,lnwmargcum,lnwgrid,lnwdelta,lnw_a,lnw_b,lnw_c,lnw_inc,lnw_h
@@ -31,13 +31,18 @@ DO iaby = 1,naby
 	lc(iaby) = c(ia,ib,iy)
 	ld(iaby) = d(ia,ib,iy)
 	ladjcost(iaby) = adjcostfn(ld(iaby),la(iaby))
-	lwage(iaby) = ygrid(iy)*wage
+	lwage(iaby) = yprodgrid(iy) * ( wage_N*yoccgrid(iy) + wage_Y*(1.0-yoccgrid(iy)) )
+	lhours_N(iaby) = h(ia,ib,iy)*occgrid(occfromy(iy))
+	lhours_Y(iaby) = h(ia,ib,iy)*(1.0-occgrid(occfromy(iy)))
 	lhours(iaby) = h(ia,ib,iy)
-	llabor(iaby) = h(ia,ib,iy)*ygrid(iy)
-	lgrosslabinc(iaby) = lhours(iaby)*ygrid(iy)*wage
-	lnetlabinc(iaby) = lhours(iaby)*ygrid(iy)*netwage + lumptransfer
-	IF(DistributeProfitsInProportion==0) lgrossprofinc(iaby) = 0.0 
-	IF(DistributeProfitsInProportion==1) lgrossprofinc(iaby) = (1.0-profdistfrac)*profit*profsharegrid(iy)
+
+	llabor_N(iaby) = lhours_N(iaby) * yprodgrid(iy)
+	llabor_Y(iaby) = lhours_Y(iaby) * yprodgrid(iy)
+	llabor(iaby) = h(ia,ib,iy)*yprodgrid(iy)
+	
+	lgrosslabinc(iaby) = lhours(iaby)*lwage(iaby)
+	lnetlabinc(iaby) = lgrosslabinc(iaby)*(1.0-labtax) + lumptransfer
+	lgrossprofinc(iaby) = profdistfracW*(1.0-corptax)*profit*profsharegrid(iy) + profdistfracL*(1.0-corptax)*profit
 	IF(TaxHHProfitIncome==0) lnetprofinc(iaby) = lgrossprofinc(iaby)
 	IF(TaxHHProfitIncome==1) lnetprofinc(iaby) = (1.0-labtax)*lgrossprofinc(iaby)
 	
@@ -117,7 +122,13 @@ END IF
 
 !means
 Ehours = SUM(lhours*gvec*ladelta*lbdelta)
+Ehours_N = SUM(lhours_N*gvec*ladelta*lbdelta)
+Ehours_Y = SUM(lhours_Y*gvec*ladelta*lbdelta)
+
 Elabor = SUM(llabor*gvec*ladelta*lbdelta)
+Elabor_N = SUM(llabor_N*gvec*ladelta*lbdelta)
+Elabor_Y = SUM(llabor_Y*gvec*ladelta*lbdelta)
+
 Ewage = SUM(lwage*gvec*ladelta*lbdelta)
 Enetlabinc = SUM(lnetlabinc*gvec*ladelta*lbdelta)
 Egrosslabinc = SUM(lgrosslabinc*gvec*ladelta*lbdelta)
