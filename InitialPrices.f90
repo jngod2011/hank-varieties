@@ -5,7 +5,7 @@ USE Globals
 USE Procedures
 
 IMPLICIT NONE
-REAL(8)		:: lhourtarget,la,lb,lc
+REAL(8)		:: lhourtarget
 
 !normalize steady state Y=N=P=P_R=1
 output = 1.0
@@ -16,16 +16,13 @@ totoutput = output*varieties
 lumptransfer = lumptransferpc*totoutput
 
 !compute steady-state target capital-output ratio
-la = -deprec 
-lb = targetMeanIll*deprec + (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N + ((1.0-1.0/elast)*(1.0-drs_Y) + (1.0/elast)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
-lc = - targetMeanIll* ( (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N )
-target_K_totoutput_ratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
+target_K_totoutput_ratio = fKNYfromANY(targetMeanIll)
 
 !steady-state prices and profits determined by elasticity of sub
 price_W = (1.0-1.0/elast)
 grossprofit_W = price_W*output*(1.0-drs_Y)
 netprofit_W = varieties*grossprofit_W
-grossprofit_R = (1.0/elast)*output
+grossprofit_R = (1.0-price_W)*output
 netprofit_R = varieties*(1.0-drs_N)*grossprofit_R
 profit = netprofit_R + netprofit_W
 

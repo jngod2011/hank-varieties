@@ -7,7 +7,7 @@ USE Procedures
 IMPLICIT NONE
 
 REAL(8), INTENT(IN) :: lrhoT
-REAL(8)				:: lstep_lab,la,lb,lc,llabor_Y,llabor_N,lK_totoutput_ratio
+REAL(8)				:: lstep_lab,llabor_Y,llabor_N,lK_totoutput_ratio
 
 lstep_lab = 1.0
 
@@ -21,10 +21,7 @@ CALL DistributionStatistics
 
 
 !implied capital-output ratio
-la = -deprec 
-lb = Ea*deprec + (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N + ((1.0-1.0/elast)*(1.0-drs_Y) + (1.0/elast)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
-lc = - Ea* ( (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N )
-lK_totoutput_ratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
+lK_totoutput_ratio = fKNYfromANY(Ea)
 
 !update labor
 llabor_Y = Elabor_Y/varieties

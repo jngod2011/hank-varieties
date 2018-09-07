@@ -142,7 +142,7 @@ type EquilibriumType
 					capital,K_totoutput_ratio,equity_A,equity_B,dividend_A,dividend_B,capital_Y,labor_Y,wage_Y,mc_Y,tfp_Y,capital_N,labor_N,wage_N,mc_N,tfp_N,price_W, &
 					grossprofit_W,netprofit_W,grossprofit_R,netprofit_R,labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,illassetdrop,caputil,&
 					govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,yprodgrid(ngpy),&
-					borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock
+					borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock,gam,elast
 
 end type
 

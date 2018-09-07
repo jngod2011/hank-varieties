@@ -8,7 +8,6 @@ IMPLICIT NONE
 
 ! REAL(8) 	:: lwage,lrcapital,ldiffprof,lprofit
 REAL(8) 	:: ldiff,llabor_Y,llabor_N,lK_totoutput_ratio,lstep,lstep_lab
-REAL(8) 	:: la,lb,lc
 
 OPEN(3, FILE = trim(OutputDir) // 'SteadyStateEqumIteration.txt', STATUS = 'replace'); CLOSE(3)
 
@@ -40,10 +39,7 @@ IF(OneAssetNoCapital==0) THEN
 		CALL DistributionStatistics
 	
 		!implied capital-output ratio
-		la = -deprec 
-		lb = Ea*deprec + (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N + ((1.0-1.0/elast)*(1.0-drs_Y) + (1.0/elast)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
-		lc = - Ea* ( (1.0-1.0/elast)*alpha_Y*drs_Y + (1.0/elast)*alpha_N*drs_N )
-		lK_totoutput_ratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
+		lK_totoutput_ratio = fKNYfromANY(Ea)
 
 		!implied total labor
 		llabor_Y = Elabor_Y/varieties

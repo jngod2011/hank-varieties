@@ -7,7 +7,7 @@ USE Procedures
 IMPLICIT NONE
 
 INTEGER 	:: it,ii,itfg
-REAL(8) 	:: lldK,lldB,ldiffB,ldiffK,lminmargcost,lpvgovbc,lpvlumpincr,linitlumpincr,stepK,stepB
+REAL(8) 	:: lldK,lldB,ldiffB,ldiffK,lminprice_W,lpvgovbc,lpvlumpincr,linitlumpincr,stepK,stepB
 REAL(8), DIMENSION(Ttransition) :: lcapital,lcapital1,lbond,lbond1,lfirmdiscount,lrb,lrb1,lworldbond,lrgov,ltransfer
 
 iteratingtransition = .true.
@@ -18,7 +18,7 @@ ELSE IF((stickytransition==.true.) .or. (zlbtransition==.true.)) THEN
 	stepK = stepstickytransK
 	stepB = stepstickytransB
 END IF
-lminmargcost = 0.01
+lminprice_W = 0.01
 
 IF(Display>=1)  write(*,*)' ';
 IF(Display>=1 .and. flextransition==.true.) write(*,*)' Solving for flexible price transition'
@@ -40,10 +40,8 @@ ELSE
 	equmTRANS%capital = irfpointer%equmFLEX%capital		
 END IF
 
-!fund bond
-equmTRANS(:)%fundbond = -equmTRANS(:)%capital*equmTRANS(:)%fundlev
 
-
+!bond guess
 IF (flextransition==.true. .and. UpdateFlexUsingBond==1) THEN !guess constant bond
 	equmTRANS(1)%bond = equmINITSS%bond
 	lldB = (log(equmFINALSS%bond)  - log(equmTRANS(1)%bond)) / real(Ttransition)
@@ -119,15 +117,15 @@ ELSE IF (flextransition == .false.) THEN
 	END IF
 END IF
 
-!price level 
-equmTRANS(1)%pricelev = 1.0
-DO it = 1,Ttransition-1
-	equmTRANS(it+1)%pricelev = equmTRANS(it)%pricelev / (1.0 - deltatransvec(it)*equmTRANS(it)%pi)
-END DO
+! !price level
+! equmTRANS(1)%pricelev = 1.0
+! DO it = 1,Ttransition-1
+! 	equmTRANS(it+1)%pricelev = equmTRANS(it)%pricelev / (1.0 - deltatransvec(it)*equmTRANS(it)%pi)
+! END DO
 
-!marginal costs
+!wholesale price
 IF (flextransition == .true.) THEN
-	equmTRANS(:)%mc = (equmTRANS(:)%elast-1.0)/equmTRANS(:)%elast
+	equmTRANS(:)%price_W = 1.0 -1.0/equmTRANS(:)%elast
 
 ELSE IF (flextransition == .false.) THEN
 
@@ -140,27 +138,38 @@ ELSE IF (flextransition == .false.) THEN
 
 	!final period of transition
 	it = Ttransition
-	equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmFINALSS%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
-											- alpha*(equmFINALSS%capital-equmTRANS(it)%capital)/(equmTRANS(it)%capital*deltatransvec(it)) &
-											- alpha*(equmFINALSS%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
-											- (1.0-alpha)*(equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * priceadjcost/ equmTRANS(it)%elast &
-											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
-	equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
+	equmTRANS(it)%price_W = (lfirmdiscount(it) 	- (equmFINALSS%totoutput-equmTRANS(it)%totoutput)/(equmTRANS(it)%totoutput*deltatransvec(it)) &
+											 ) * equmFINALSS%pi * priceadjcost * equmTRANS(it)%varieties/ equmTRANS(it)%elast &
+											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost * equmTRANS(it)%varieties / equmTRANS(it)%elast
+	equmTRANS(it)%price_W = max(lminprice_W,equmTRANS(it)%price_W)
 
 	!solve backwards
 	DO it = Ttransition-1,1,-1
-		equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmTRANS(it+1)%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
-												- alpha*(equmTRANS(it+1)%capital-equmTRANS(it)%capital)/(equmTRANS(it)%capital*deltatransvec(it)) &
-												- alpha*(equmTRANS(it+1)%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
-												- (1.0-alpha)*(equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * priceadjcost/ equmTRANS(it)%elast &
-												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
-		equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
+		equmTRANS(it)%price_W = (lfirmdiscount(it) 	- (equmTRANS(it+1)%totoutput-equmTRANS(it)%totoutput)/(equmTRANS(it)%totoutput*deltatransvec(it)) &
+												 ) * equmTRANS(it+1)%pi * priceadjcost * equmTRANS(it)%varieties/ equmTRANS(it)%elast &
+												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost * equmTRANS(it)%varieties / equmTRANS(it)%elast
+		equmTRANS(it)%price_W = max(lminprice_W,equmTRANS(it)%price_W)
 
 	END DO
 END IF
 
+
+!profits
+equmTRANS(:)%grossprofit_W = equmTRANS(:)%price_W*equmTRANS(:)%output*(1.0-drs_Y)
+equmTRANS(:)%netprofit_W = equmTRANS(:)%varieties*equmTRANS(:)%grossprofit_W
+equmTRANS(:)%grossprofit_R = output*(1.0-equmTRANS(:)%price_W)
+equmTRANS(:)%netprofit_R = equmTRANS(:)%varieties*(1.0-drs_N)*equmTRANS(:)%grossprofit_R
+equmTRANS(:)%profit = equmTRANS(:)%netprofit_R + equmTRANS(:)%netprofit_W
+
 !labor
-equmTRANS(:)%labor = equmINITSS%labor
+equmTRANS(:)%labor_Y = equmINITSS%labor_Y
+equmTRANS(:)%labor_N = equmINITSS%labor_N
+
+K_totoutput_ratio = capital/totoutput
+rcapital = (price_W*alpha_Y*drs_Y + (grossprofit_R/output)*alpha_N*drs_N)/K_totoutput_ratio
+
+capital_Y = price_W*alpha_Y*drs_Y*output/rcapital
+
 
 !other eqm variables
 equmTRANS(:)%gap = equmTRANS(:)%elast*equmTRANS(:)%mc / (equmTRANS(:)%elast-1.0) - 1.0
@@ -349,7 +358,11 @@ ldiffB = 1.0
 nblviolated = .false.
 DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nblviolated == .false.)
 	!solve for transtion
+	MOVE THIS TO TH LAST THING, RATHERN THATN THE FIRST THING SO WE ONLY HAVE TO DO THINGS ONCE.
 	CALL Transition
+	
+	update capital, laborN, laborY (get capitalN, capitalY probably using an old profit)
+	get output, varieties and go from there.
 	
 	!computed implied equilibrium quantities
 	lbond = statsTRANS(:)%Eb
@@ -488,7 +501,7 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 												- alpha*(equmFINALSS%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
 												- (1.0-alpha)*(equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * priceadjcost/ equmTRANS(it)%elast &
 												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
-		equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
+		equmTRANS(it)%mc = max(lminprice_W,equmTRANS(it)%mc)
 
 		!solve backwards
 		DO it = Ttransition-1,1,-1
@@ -497,7 +510,7 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 													- alpha*(equmTRANS(it+1)%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
 													- (1.0-alpha)*(equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * priceadjcost/ equmTRANS(it)%elast &
 													+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
-			equmTRANS(it)%mc = max(lminmargcost,equmTRANS(it)%mc)
+			equmTRANS(it)%mc = max(lminprice_W,equmTRANS(it)%mc)
 
 		END DO
 	END IF

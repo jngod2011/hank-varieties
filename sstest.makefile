@@ -11,7 +11,7 @@ PROG = $(OUT)
 
 MOD = Parameters.o Globals.o umfpack.o Procedures.o 
 
-SUBR = 	AllocateArrays.o SetParameters.o Grids.o InitialPrices.o IterateBellman.o HJBUpdate.o  OptimalConsumption.o FnHoursBC.o cumnor.o rtsec.o sort2.o StationaryDistribution.o SaveSteadyStateOutput.o DistributionStatistics.o rtbis.o rtflsp.o InitialSteadyState.o FinalSteadyState.o SolveSteadyStateEqum.o CumulativeConsumption.o DiscountedMPC.o FnDiscountRate.o 
+SUBR = 	AllocateArrays.o SetParameters.o Grids.o InitialPrices.o IterateBellman.o HJBUpdate.o  OptimalConsumption.o FnHoursBC.o cumnor.o rtsec.o sort2.o StationaryDistribution.o SaveSteadyStateOutput.o DistributionStatistics.o rtbis.o rtflsp.o InitialSteadyState.o FinalSteadyState.o SolveSteadyStateEqum.o CumulativeConsumption.o DiscountedMPC.o FnDiscountRate.o ImpulseResponses.o IRFSequence.o IterateTransition.o
 
 #Calibration.o MomentConditions.o dfovec.o newuoa-h.o newuob-h.o update.o trsapp-h.o biglag.o bigden.o
 

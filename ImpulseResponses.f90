@@ -49,11 +49,11 @@ IF(IncludeTFPShock==1) THEN
 	IF(Display>=1) write(*,*)'Solving for TFP shock IRF'	
 	equmTRANS(:) = equmINITSS	
 	
-	equmTRANS(1)%tfp = equmINITSS%tfp * exp(TFPShockSize)
+	equmTRANS(1)%tfp_Y = equmINITSS%tfp_Y * exp(TFPShockSize)
 	DO it = 2,Ttransition-nendtrans
-		equmTRANS(it)%tfp = equmTRANS(it-1)%tfp ** (TFPShockPers**deltatransvec(it-1))
+		equmTRANS(it)%tfp_Y = equmTRANS(it-1)%tfp_Y ** (TFPShockPers**deltatransvec(it-1))
 	END DO	
-	equmTRANS(Ttransition-nendtrans+1:Ttransition)%tfp = equmINITSS%tfp
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%tfp_Y = equmINITSS%tfp_Y
 
 	IRFDir = "TFP"
 	CALL IRFSequence(IRFDir)
@@ -66,12 +66,12 @@ IF (IncludeNewsShock==1) THEN
 	
 	equmTRANS(:) = equmINITSS	
 	it1 = MINLOC(cumdeltatrans, 1, MASK = cumdeltatrans>=NewsShockQtrs)
-	equmTRANS(1:it1-1)%tfp = equmINITSS%tfp
-	equmTRANS(it1)%tfp = equmINITSS%tfp * exp(NewsShockSize)
+	equmTRANS(1:it1-1)%tfp_Y = equmINITSS%tfp_Y
+	equmTRANS(it1)%tfp_Y = equmINITSS%tfp_Y * exp(NewsShockSize)
 	DO it = it1+1,Ttransition-nendtrans
-		equmTRANS(it)%tfp = equmTRANS(it-1)%tfp ** (NewsShockPers**deltatransvec(it-1))
+		equmTRANS(it)%tfp_Y = equmTRANS(it-1)%tfp_Y ** (NewsShockPers**deltatransvec(it-1))
 	END DO	
-	equmTRANS(Ttransition-nendtrans+1:Ttransition)%tfp = equmINITSS%tfp
+	equmTRANS(Ttransition-nendtrans+1:Ttransition)%tfp_Y = equmINITSS%tfp_Y
 
 	IRFDir = "News"
 	CALL IRFSequence(IRFDir)
@@ -199,23 +199,6 @@ IF(IncludePrefShock==1) THEN
 	
 END IF
 
-!Fund Leverage shock
-IF(IncludeFundLevShock==1) THEN
-	IF(Display>=1) write(*,*)'Solving for fund leverage shock IRF'	
-
-	equmTRANS(:) = equmINITSS		
-	equmTRANS(1)%fundlev = equmINITSS%fundlev + FundLevShockSize
-	DO it = 2,Ttransition-nendtrans
-		equmTRANS(it)%fundlev =equmINITSS%fundlev *(1.0-FundLevShockPers**deltatransvec(it-1)) + equmTRANS(it-1)%fundlev * (FundLevShockPers**deltatransvec(it-1))
-
-	END DO	
-	equmTRANS(Ttransition-nendtrans+1:Ttransition)%fundlev = equmINITSS%fundlev
-
-	IRFDir = "FundLev"
-	CALL IRFSequence(IRFDir)
-
-END IF
-
 !Risk Aversion shock
 IF(IncludeRiskAversionShock==1) THEN
 	IF(Display>=1) write(*,*)'Solving for risk aversion shock IRF'	
@@ -341,11 +324,11 @@ IF(IncludeProdDispShock==1) THEN
 	equmTRANS(Ttransition-nendtrans+1:Ttransition)%prodgridscale = equmINITSS%prodgridscale
 
 	lminygrid = 1.0e-8_8
-	equmTRANS(1)%ygrid(:) = equmTRANS(1)%prodgridscale * equmINITSS%ygrid(:) - meanlabeff*(equmTRANS(1)%prodgridscale-1)
-	equmTRANS(1)%ygrid(:) = max(equmTRANS(1)%ygrid(:),lminygrid)
+	equmTRANS(1)%yprodgrid(:) = equmTRANS(1)%prodgridscale * equmINITSS%yprodgrid(:) - meanlabeff*(equmTRANS(1)%prodgridscale-1)
+	equmTRANS(1)%yprodgrid(:) = max(equmTRANS(1)%yprodgrid(:),lminygrid)
 	DO it = 2,Ttransition
-		equmTRANS(it)%ygrid(:) = equmTRANS(it)%prodgridscale * equmINITSS%ygrid(:) - meanlabeff*(equmTRANS(it)%prodgridscale-1)
-		equmTRANS(it)%ygrid(:) = max(equmTRANS(it)%ygrid(:),lminygrid)
+		equmTRANS(it)%yprodgrid(:) = equmTRANS(it)%prodgridscale * equmINITSS%yprodgrid(:) - meanlabeff*(equmTRANS(it)%prodgridscale-1)
+		equmTRANS(it)%yprodgrid(:) = max(equmTRANS(it)%yprodgrid(:),lminygrid)
 	END DO	
 
 
