@@ -31,8 +31,8 @@ ReportNonMonotonicity   	= 0
 !run options
 CalibrateDiscountRate	= 1
 EquilibriumR		 	= 1
-ComputeCumulativeMPC 	= 1
-DoImpulseResponses 		= 0
+ComputeCumulativeMPC 	= 0
+DoImpulseResponses 		= 1
 DoFeedInPrices 			= 0
 SaveTransitionPolicyFns = 0	!warning: will create a very large number of text files 
 SaveTime1PolicyFns 		= 0
@@ -73,7 +73,7 @@ PinKappa1ByKappa02 		= 1!0 !imposes that coefficient on convex term is equal to 
 !transition computation options
 PermanentShock 				= 0
 SolveFlexPriceTransition	= 0
-SolveStickyPriceTransition	= 0
+SolveStickyPriceTransition	= 1
 SolveZLBTransition			= 0
 ConvergenceRelToOutput 		= 1
 UpdateFlexUsingBond 		= 0
@@ -103,7 +103,7 @@ taxincrdecay 		= 0.02 !0.1 !decay rate for tax increase higher for faster decay
 GovBCFDScheme 		= 2 !1 for old, 2 for new. 2 requires taxincrstart = 0.0, ony affects B adjusts
 
 !DECOMPOSITION
-DoPriceExperiments		= 1
+DoPriceExperiments		= 0
 WhichPriceExperiment(1) = 1 !change wage and labor tax only
 WhichPriceExperiment(2) = 1 !only change profits
 WhichPriceExperiment(3) = 1 !only change profits and wage
@@ -127,7 +127,7 @@ IncludeBorrWedgeShock=0
 IncludeNewsShock=0
 IncludeKappa0Shock=0
 IncludeKappa1Shock=0
-IncludeMonetaryShock=0
+IncludeMonetaryShock=1
 IncludeForwardGuideShock=0
 IncludePrefShock=0
 IncludeFundLevShock=0
@@ -158,7 +158,7 @@ Kappa0ShockPers 		= exp(-0.5) !quarterly
 Kappa1ShockSize 		= 0.05 !percentage points
 Kappa1ShockPers 		= exp(-0.3) !quarterly
 
-MonetaryShockSize 		= 0.005 !percentage points
+MonetaryShockSize 		= 0.0 !0.005 !percentage points
 MonetaryShockPers 		= exp(-0.5) !0.5 !quarterly
 
 mpshockimpact 			= 0.005
@@ -257,8 +257,10 @@ maxitertransflex	= 2000 !500 !200 !300
 maxitertranssticky	= 2000 !500 !200 !500
 stepflextransK  = 0.05
 stepflextransB  = 0.001 !make smaller if update using B
+stepflextransL  = 0.2
 stepstickytransK  = 0.05 !0.01
 stepstickytransB  = 0.001 !0.001 !0.00005
+stepstickytransL  = 0.2
 
 deltacumcon = 0.01 !deltatransmin !set to a low number like 0.01 for accurate steady state MPCs, and to deltratransmin for IRF consistency
 
@@ -278,6 +280,7 @@ bondprefweight 	= 0.01
 !liquid assets
 rb			 = 0.02/4.0 !liquid return
 borrwedge 	 = 0.015 !0.0148846 !0.019663 ! !quarterly wedge between rb and rborr: intermediation cost  
+rborr = rb + borrwedge
 borrwedgemax = 0.09
 blim 		 = -1.0 	!borrowing limit multiple of quarterly output
 finwedge	= 0.0 !financial intermediation wedge: households receive rb - finwedge
@@ -352,7 +355,7 @@ utilelastalpha  = 1.0 + utilelast-alpha_Y*utilelast
 
 !government
 labtax 			= 0.30
-lumptransferpc 	= 0.01 !40000*labtax/(115000.0*2.92*4.0)
+lumptransferpc 	= 0.05 !40000*labtax/(115000.0*2.92*4.0)
 lumptransfer	= lumptransferpc*1.0 !initialize assuming totoutput=1
 corptax 		= 0.0
 ssdebttogdp 	= 0.26*4 !if foreign sector assumed to hold residual bonds or if equilibrium in liquid assets

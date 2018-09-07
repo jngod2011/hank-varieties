@@ -39,7 +39,7 @@ IF(OneAssetNoCapital==0) THEN
 		CALL DistributionStatistics
 	
 		!implied capital-output ratio
-		lK_totoutput_ratio = fKNYfromANY(Ea)
+		CALL KNYfromANY(Ea,lK_totoutput_ratio,price_W)
 
 		!implied total labor
 		llabor_Y = Elabor_Y/varieties
@@ -121,7 +121,8 @@ taxrev = labtax*wage_Y*labor_Y*varieties + labtax*wage_N*labor_N - lumptransfer 
 IF(TaxHHProfitIncome == 1) taxrev = taxrev + labtax*profdistfracW*profit*(1.0-corptax)
 
 caputil 	= 1.0
-illassetdrop = 1.0
+assetdrop_A = 1.0
+assetdrop_B = 1.0
 
 IF(GovBondResidualZeroWorld==0) THEN
 	govbond = -ssdebttogdp*output

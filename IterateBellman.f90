@@ -20,6 +20,7 @@ bdrift = MERGE((rb+PerfectAnnuityMarkets*deathrate)*bgrid,(rborr+PerfectAnnuityM
 
 IF (Borrowing==1 .and. bgrid(1) < -lumptransfer/(rborr+PerfectAnnuityMarkets*deathrate)) THEN
 	write(*,*) 'Warning: natural borrowing limit violated'
+	write(*,*) lumptransfer, rborr, rb, borrwedge, bgrid(1)
 END IF
 
 

@@ -18,7 +18,7 @@ integer :: SymmetricAdjustmentCost,NoDepositCost,AdjustCostFnRatio,SobolSequence
 logical :: flextransition,stickytransition,zlbtransition,testingGHH
 integer :: maxiter,maxitertransflex,maxitertranssticky,maxiterKFE,maxiterequmss,maxiterrho,nfeed
 real(8) :: Vtol,KFEtol,deltass,deltakfe,deltacumcon,nendtrans,deltatransvec(Ttransition),cumdeltatrans(Ttransition),toltransition,deltatransparam,deltatransmin,deltatransmax,adjfricshgridfrac,deltatransnu
-real(8) :: tolequmss,stepequmss,tolrho,stepflextransK,stepflextransB,stepstickytransK,stepstickytransB,dVamin,dVbmin
+real(8) :: tolequmss,stepequmss,tolrho,stepflextransK,stepflextransB,stepflextransL,stepstickytransK,stepstickytransB,stepstickytransL,dVamin,dVbmin
 
 !CALIBRATION OPTIONS
 integer :: EstimateKappafc, EstimateKappa0, EstimateKappa1, EstimateKappa2, EstimateKappa3, EstimateKappa4, EstimateRho, EstimateBorrWedge,EstimateGamma
@@ -82,7 +82,7 @@ real(8) 	:: bondprefweight,bondgam,mpshockimpact
 real(8)     :: ra,rborr,rcapital,rb,pi,rnom,gap,bond,investment,govexp,taxrev,govbond,worldbond,profit,priceadjust
 real(8)     :: totoutput,varieties,output,capital,K_totoutput_ratio,equity_A,equity_B,dividend_A,dividend_B
 real(8)     :: capital_Y,labor_Y,wage_Y,mc_Y,tfp_Y,capital_N,labor_N,wage_N,mc_N,tfp_N,price_W,grossprofit_W,netprofit_W,grossprofit_R,netprofit_R
-real(8)     :: labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,illassetdrop,caputil,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale
+real(8)     :: labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,assetdrop_A,assetdrop_B,caputil,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale
 integer 	:: neqmiter
 logical		:: converged,initialSS
 
@@ -140,7 +140,7 @@ type EquilibriumType
 ! 					priceadjust,fundlev,elast,gam,fundbond,profit,dividend, lumptransfer,equity,caputil,deprec,tfpadj,illassetdrop,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,yprodgrid(ngpy)
 	real(8)     :: ra,rborr,rcapital,rb,pi,rnom,gap,bond,investment,govexp,taxrev,govbond,worldbond,profit,priceadjust,totoutput,varieties,output,&
 					capital,K_totoutput_ratio,equity_A,equity_B,dividend_A,dividend_B,capital_Y,labor_Y,wage_Y,mc_Y,tfp_Y,capital_N,labor_N,wage_N,mc_N,tfp_N,price_W, &
-					grossprofit_W,netprofit_W,grossprofit_R,netprofit_R,labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,illassetdrop,caputil,&
+					grossprofit_W,netprofit_W,grossprofit_R,netprofit_R,labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,assetdrop_A,assetdrop_B,caputil,&
 					govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,yprodgrid(ngpy),&
 					borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock,gam,elast
 

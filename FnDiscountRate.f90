@@ -21,7 +21,7 @@ CALL DistributionStatistics
 
 
 !implied capital-output ratio
-lK_totoutput_ratio = fKNYfromANY(Ea)
+CALL KNYfromANY(Ea,lK_totoutput_ratio,price_W)
 
 !update labor
 llabor_Y = Elabor_Y/varieties

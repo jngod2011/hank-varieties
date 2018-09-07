@@ -212,16 +212,18 @@ END FUNCTION invlogistic
 
 !-----------------------------------------------
 
-REAL(8) FUNCTION fKNYfromANY(lANY)
-REAL(8), INTENT(in)	::  lANY
+SUBROUTINE KNYfromANY(lANY,lKNY,lprice_W)
+REAL(8), INTENT(IN)		::  lANY,lprice_W
+REAL(8), INTENT(OUT)	::  lKNY
 REAL(8) 	:: la,lb,lc            
 
-la = -deprec 
-lb = lANY*deprec + price_W*alpha_Y*drs_Y + (1.0-price_W)*alpha_N*drs_N + (price_W*(1.0-drs_Y) + (1.0-price_W)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
-lc = - lANY* ( price_W*alpha_Y*drs_Y + (1.0-price_W)*alpha_N*drs_N )
-fKNYfromANY_ratio = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
 
-END FUNCTION FnKNYfromANY
+la = -deprec 
+lb = lANY*deprec + lprice_W*alpha_Y*drs_Y + (1.0-lprice_W)*alpha_N*drs_N + (lprice_W*(1.0-drs_Y) + (1.0-lprice_W)*(1.0-drs_N)) *(1.0-corptax)*profdistfracA
+lc = - lANY* ( lprice_W*alpha_Y*drs_Y + (1.0-lprice_W)*alpha_N*drs_N )
+lKNY = (-lb+sqrt(lb**2-4*la*lc)) / (2*la)
+
+END SUBROUTINE KNYfromANY
 
 !-----------------------------------------------
 

@@ -7,16 +7,20 @@ USE Procedures
 IMPLICIT NONE
 
 INTEGER 	:: it,ii,itfg
-REAL(8) 	:: lldK,lldB,ldiffB,ldiffK,lminprice_W,lpvgovbc,lpvlumpincr,linitlumpincr,stepK,stepB
-REAL(8), DIMENSION(Ttransition) :: lcapital,lcapital1,lbond,lbond1,lfirmdiscount,lrb,lrb1,lworldbond,lrgov,ltransfer
+REAL(8) 	:: lldK,lldB,lldLN,lldLY,ldiffB,ldiffK,ldiffL,stepK,stepB,stepL
+REAL(8) 	:: lminprice_W,lpvgovbc,lpvlumpincr,linitlumpincr
+REAL(8), DIMENSION(Ttransition) :: lcapital,lcapital1,lbond,lbond1,lrb,lrb1,llabor_Y,llabor_Y1,llabor_N,llabor_N1
+REAL(8), DIMENSION(Ttransition) :: lfirmdiscount,lworldbond,lrgov,ltransfer,lKYY,lKNN
 
 iteratingtransition = .true.
 IF(flextransition==.true.) THEN
 	stepK = stepflextransK
 	stepB = stepflextransB
+	stepL = stepflextransL
 ELSE IF((stickytransition==.true.) .or. (zlbtransition==.true.)) THEN
 	stepK = stepstickytransK
 	stepB = stepstickytransB
+	stepL = stepstickytransL
 END IF
 lminprice_W = 0.01
 
@@ -39,7 +43,6 @@ IF((flextransition==.true.) .or. (UseFlexTransitionAsGuess==0)) THEN
 ELSE
 	equmTRANS%capital = irfpointer%equmFLEX%capital		
 END IF
-
 
 !bond guess
 IF (flextransition==.true. .and. UpdateFlexUsingBond==1) THEN !guess constant bond
@@ -70,365 +73,45 @@ ELSE IF (monetaryshock==.true.) THEN !guess zero inflation
 	equmTRANS(:)%rb = equmTRANS(:)%rnom - equmTRANS(:)%pi 
 END IF
 
-
-!inflation and nominal interest 
-IF (flextransition == .true.) THEN
-	equmTRANS(:)%pi = (equmTRANS(:)%rb - equmINITSS%rnom - equmTRANS(:)%mpshock) / (phitaylor-1.0) !taylor rule
-	equmTRANS(:)%rnom = equmTRANS(:)%rb + equmTRANS(:)%pi !fisher equn
-ELSE IF (flextransition == .false.) THEN
-	IF(zlbtransition==.false.) THEN
-		IF(BackwardTermInTaylorRule==0) THEN
-			IF(forwardguide==.false.) THEN
-				equmTRANS(:)%pi = (equmTRANS(:)%rb - equmINITSS%rnom - equmTRANS(:)%mpshock) / (phitaylor-1.0) !taylor rule
-				equmTRANS(:)%rnom = equmTRANS(:)%rb + equmTRANS(:)%pi !fisher equn
-			
-			ELSE IF(forwardguide==.true.) THEN
-
-				equmTRANS(1:itfg-1)%pi = (equmTRANS(1:itfg-1)%rb - equmINITSS%rnom - equmTRANS(1:itfg-1)%mpshock) / (phifg-1.0) !taylor rule
-				equmTRANS(1:itfg-1)%rnom = equmTRANS(1:itfg-1)%rb + equmTRANS(1:itfg-1)%pi !fisher equn
-			
-				equmTRANS(itfg:Ttransition)%pi = (equmTRANS(itfg:Ttransition)%rb - equmINITSS%rnom - equmTRANS(itfg:Ttransition)%mpshock) / (phitaylor-1.0) !taylor rule
-				equmTRANS(itfg:Ttransition)%rnom = equmTRANS(itfg:Ttransition)%rb + equmTRANS(itfg:Ttransition)%pi !fisher equn
-				
-			END IF		
-
-
-		ELSE IF(BackwardTermInTaylorRule==1) THEN
-			equmTRANS(1)%pi = (equmTRANS(1)%rb - equmINITSS%rnom - taylorpers*deltatransvec(1)*equmTRANS(1)%mpshock) / (phitaylor*taylorpers*deltatransvec(1)-1.0)
-			equmTRANS(1)%rnom = equmTRANS(1)%rb + equmTRANS(1)%pi !fisher equn
-			DO it = 2,Ttransition
-				equmTRANS(it)%pi = (equmTRANS(it)%rb - taylorpers*deltatransvec(it)*equmINITSS%rnom &
-									- (1.0-taylorpers*deltatransvec(it))*equmTRANS(it-1)%rnom  &
-									- taylorpers*deltatransvec(it)*equmTRANS(it)%mpshock) / (phitaylor*taylorpers*deltatransvec(it)-1.0) !taylor rule
-				equmTRANS(it)%rnom = equmTRANS(it)%rb + equmTRANS(it)%pi !fisher equn
-			END DO
-		END IF
-
-	ELSE IF(zlbtransition==.true.) THEN
-		DO it = 1,Ttransition
-			IF(equmTRANS(it)%rb > (equmINITSS%rnom + equmTRANS(it)%mpshock) / phitaylor) THEN !ZLB does not bind
-				equmTRANS(it)%pi = (equmTRANS(it)%rb - equmINITSS%rnom - equmTRANS(it)%mpshock) / (phitaylor-1.0) !taylor rule
-				equmTRANS(it)%rnom = equmTRANS(it)%rb + equmTRANS(it)%pi !fisher equn		
-			ELSE IF(equmTRANS(it)%rb <= (equmINITSS%rnom + equmTRANS(it)%mpshock)/phitaylor) THEN !ZLB binds
-				equmTRANS(it)%pi = -equmTRANS(it)%rb
-				equmTRANS(it)%rnom = 0.0
-			END IF
-		END DO
-	END IF
-END IF
-
-! !price level
-! equmTRANS(1)%pricelev = 1.0
-! DO it = 1,Ttransition-1
-! 	equmTRANS(it+1)%pricelev = equmTRANS(it)%pricelev / (1.0 - deltatransvec(it)*equmTRANS(it)%pi)
-! END DO
-
-!wholesale price
-IF (flextransition == .true.) THEN
-	equmTRANS(:)%price_W = 1.0 -1.0/equmTRANS(:)%elast
-
-ELSE IF (flextransition == .false.) THEN
-
-	!solve phillips curve backwards for marginal costs
-	IF (FirmDiscountRate==1) lfirmdiscount = equmTRANS(:)%rho
-	IF (FirmDiscountRate==2) lfirmdiscount = equmINITSS%rb
-	IF (FirmDiscountRate==3) lfirmdiscount = equmINITSS%ra
-	IF (FirmDiscountRate==4) lfirmdiscount = equmTRANS(:)%rb
-	IF (FirmDiscountRate==5) lfirmdiscount = equmTRANS(:)%ra
-
-	!final period of transition
-	it = Ttransition
-	equmTRANS(it)%price_W = (lfirmdiscount(it) 	- (equmFINALSS%totoutput-equmTRANS(it)%totoutput)/(equmTRANS(it)%totoutput*deltatransvec(it)) &
-											 ) * equmFINALSS%pi * priceadjcost * equmTRANS(it)%varieties/ equmTRANS(it)%elast &
-											+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost * equmTRANS(it)%varieties / equmTRANS(it)%elast
-	equmTRANS(it)%price_W = max(lminprice_W,equmTRANS(it)%price_W)
-
-	!solve backwards
-	DO it = Ttransition-1,1,-1
-		equmTRANS(it)%price_W = (lfirmdiscount(it) 	- (equmTRANS(it+1)%totoutput-equmTRANS(it)%totoutput)/(equmTRANS(it)%totoutput*deltatransvec(it)) &
-												 ) * equmTRANS(it+1)%pi * priceadjcost * equmTRANS(it)%varieties/ equmTRANS(it)%elast &
-												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost * equmTRANS(it)%varieties / equmTRANS(it)%elast
-		equmTRANS(it)%price_W = max(lminprice_W,equmTRANS(it)%price_W)
-
+!guess labor
+IF((flextransition==.true.) .or. (UseFlexTransitionAsGuess==0)) THEN
+	lldLY = (log(equmFINALSS%labor_Y)  - log(equmINITSS%labor_Y)) / real(Ttransition+1)
+	lldLN = (log(equmFINALSS%labor_N)  - log(equmINITSS%labor_N)) / real(Ttransition+1)
+	DO it = 1,Ttransition
+		equmTRANS(it)%labor_Y = equmINITSS%labor_Y  *exp(lldLY*it)
+		equmTRANS(it)%labor_N = equmINITSS%labor_N  *exp(lldLN*it)
 	END DO
+ELSE
+	equmTRANS%labor_Y = irfpointer%equmFLEX%labor_Y
+	equmTRANS%labor_N = irfpointer%equmFLEX%labor_N
 END IF
 
+!
+! !other eqm variables
+! equmTRANS(:)%gap = equmTRANS(:)%elast*equmTRANS(:)%mc / (equmTRANS(:)%elast-1.0) - 1.0
+! equmTRANS(:)%tfpadj = (equmTRANS(:)%tfp**((1.0+utilelast)/utilelastalpha)) * ((equmTRANS(:)%mc*alpha/equmINITSS%rcapital)**(alpha*utilelast/utilelastalpha))
+! equmTRANS(:)%KNratio = equmTRANS(:)%capital/equmTRANS(:)%labor
+! equmTRANS(:)%wage = equmTRANS(:)%mc*(1.0-alpha)* equmTRANS(:)%tfpadj * (equmTRANS(:)%KNratio**(alpha/utilelastalpha))
+! equmTRANS(:)%netwage = (1.0-equmTRANS(:)%labtax)*equmTRANS(:)%wage
+! equmTRANS(:)%caputil = ((equmTRANS(:)%mc*alpha*equmTRANS(:)%tfp/equmINITSS%rcapital) * equmTRANS(:)%KNratio**(alpha-1.0)) ** (utilelast/utilelastalpha)
+! equmTRANS(:)%output = equmTRANS(:)%tfpadj * (equmTRANS(:)%capital**(alpha/utilelastalpha)) * (equmTRANS(:)%labor**((1.0-alpha)*(1.0+utilelast)/utilelastalpha))
+! equmTRANS(:)%KYratio = (equmTRANS(:)%KNratio**(1.0-alpha)) / (equmTRANS(:)%tfp* (equmTRANS(:)%caputil**alpha))
+! equmTRANS(:)%rcapital = ((equmINITSS%rcapital**utilelast) * equmTRANS(:)%mc * alpha / equmTRANS(:)%KYratio ) ** (1.0/(1.0+utilelast))
+! IF (flextransition == .true.) equmTRANS(:)%priceadjust = 0.0
+! IF (flextransition == .false.) equmTRANS(:)%priceadjust = (priceadjcost/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%capital/equmTRANS(:)%KYratio
+! equmTRANS(:)%profit = (1.0-equmTRANS(:)%mc)*equmTRANS(:)%capital/equmTRANS(:)%KYratio - equmTRANS(:)%priceadjust
+!
+! equmTRANS(:)%deprec = equmINITSS%deprec + (utilelast*equmINITSS%rcapital/(1.0+ utilelast)) * ((equmTRANS(:)%rcapital/equmINITSS%rcapital)**(1.0+utilelast) -1.0)
 
-!profits
-equmTRANS(:)%grossprofit_W = equmTRANS(:)%price_W*equmTRANS(:)%output*(1.0-drs_Y)
-equmTRANS(:)%netprofit_W = equmTRANS(:)%varieties*equmTRANS(:)%grossprofit_W
-equmTRANS(:)%grossprofit_R = output*(1.0-equmTRANS(:)%price_W)
-equmTRANS(:)%netprofit_R = equmTRANS(:)%varieties*(1.0-drs_N)*equmTRANS(:)%grossprofit_R
-equmTRANS(:)%profit = equmTRANS(:)%netprofit_R + equmTRANS(:)%netprofit_W
-
-!labor
-equmTRANS(:)%labor_Y = equmINITSS%labor_Y
-equmTRANS(:)%labor_N = equmINITSS%labor_N
-
-K_totoutput_ratio = capital/totoutput
-rcapital = (price_W*alpha_Y*drs_Y + (grossprofit_R/output)*alpha_N*drs_N)/K_totoutput_ratio
-
-capital_Y = price_W*alpha_Y*drs_Y*output/rcapital
-
-
-!other eqm variables
-equmTRANS(:)%gap = equmTRANS(:)%elast*equmTRANS(:)%mc / (equmTRANS(:)%elast-1.0) - 1.0
-equmTRANS(:)%tfpadj = (equmTRANS(:)%tfp**((1.0+utilelast)/utilelastalpha)) * ((equmTRANS(:)%mc*alpha/equmINITSS%rcapital)**(alpha*utilelast/utilelastalpha))
-equmTRANS(:)%KNratio = equmTRANS(:)%capital/equmTRANS(:)%labor
-equmTRANS(:)%wage = equmTRANS(:)%mc*(1.0-alpha)* equmTRANS(:)%tfpadj * (equmTRANS(:)%KNratio**(alpha/utilelastalpha))
-equmTRANS(:)%netwage = (1.0-equmTRANS(:)%labtax)*equmTRANS(:)%wage
-equmTRANS(:)%caputil = ((equmTRANS(:)%mc*alpha*equmTRANS(:)%tfp/equmINITSS%rcapital) * equmTRANS(:)%KNratio**(alpha-1.0)) ** (utilelast/utilelastalpha)
-equmTRANS(:)%output = equmTRANS(:)%tfpadj * (equmTRANS(:)%capital**(alpha/utilelastalpha)) * (equmTRANS(:)%labor**((1.0-alpha)*(1.0+utilelast)/utilelastalpha))
-equmTRANS(:)%KYratio = (equmTRANS(:)%KNratio**(1.0-alpha)) / (equmTRANS(:)%tfp* (equmTRANS(:)%caputil**alpha))
-equmTRANS(:)%rcapital = ((equmINITSS%rcapital**utilelast) * equmTRANS(:)%mc * alpha / equmTRANS(:)%KYratio ) ** (1.0/(1.0+utilelast))
-IF (flextransition == .true.) equmTRANS(:)%priceadjust = 0.0
-IF (flextransition == .false.) equmTRANS(:)%priceadjust = (priceadjcost/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%capital/equmTRANS(:)%KYratio
-equmTRANS(:)%profit = (1.0-equmTRANS(:)%mc)*equmTRANS(:)%capital/equmTRANS(:)%KYratio - equmTRANS(:)%priceadjust
-
-equmTRANS(:)%deprec = equmINITSS%deprec + (utilelast*equmINITSS%rcapital/(1.0+ utilelast)) * ((equmTRANS(:)%rcapital/equmINITSS%rcapital)**(1.0+utilelast) -1.0)
-
-!solve backward for investment
-it = Ttransition
-equmTRANS(it)%investment = (equmFINALSS%capital-equmTRANS(it)%capital)/deltatransvec(it) + equmTRANS(it)%deprec*equmTRANS(it)%capital
-DO it = Ttransition-1,1,-1
-	equmTRANS(it)%investment = (equmTRANS(it+1)%capital-equmTRANS(it)%capital)/deltatransvec(it) + equmTRANS(it)%deprec*equmTRANS(it)%capital
-END DO
-
-!dividends and illiquid return
-IF(FixProfitsOutOfSteadyState==0) equmTRANS(:)%dividend 	= equmTRANS(:)%profit*(1.0-corptax)
-IF(FixProfitsOutOfSteadyState==1) equmTRANS(:)%dividend 	= equmINITSS%profit*(1.0-corptax)
-IF(DistributeProfitsInProportion==1) equmTRANS(:)%dividend  = profdistfrac*equmTRANS(:)%dividend 
-
-IF(DividendFundLumpSum==1) equmTRANS(:)%divrate = 0.0
-IF(DividendFundLumpSum==0) equmTRANS(:)%divrate = equmTRANS(:)%dividend/equmTRANS(:)%capital
-
-
-equmTRANS(:)%ra = (equmTRANS(:)%rcapital*equmTRANS(:)%caputil - equmTRANS(:)%deprec + equmTRANS(:)%divrate - equmTRANS(:)%fundlev*equmTRANS(:)%rb) / (1.0-equmTRANS(:)%fundlev)
-
-!value of equity component of investmemt fund
-IF(DividendFundLumpSum==0) THEN
-	equmTRANS(:)%equity = 0.0
-	equmTRANS(:)%illassetdrop = 1.0	
-ELSE IF(DividendFundLumpSum==1) THEN
-	it = Ttransition
-	equmTRANS(it)%equity = (equmFINALSS%equity + equmTRANS(it)%dividend*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%ra)		
-	DO it = Ttransition-1,1,-1
-		equmTRANS(it)%equity = (equmTRANS(it+1)%equity + equmTRANS(it)%dividend*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%ra)		
-	END DO
-	equmTRANS(:)%illassetdrop = ((1.0-equmTRANS(1)%fundlev)*equmTRANS(1)%capital + equmTRANS(1)%equity) / ((1.0-equmINITSS%fundlev)*equmINITSS%capital + equmINITSS%equity)
-END IF
-
-	
-!government budget constraint,expenditures and tax rates
-IF (AdjGovBudgetConstraint==1) THEN !adjust spending
-	equmTRANS(:)%govbond = equmINITSS%govbond * (equmTRANS(:)%pricelev**-fixnomgovdebt)
-	equmTRANS(:)%labtax = equmINITSS%labtax
-	IF(RebateCorpTaxLumpSum==0) equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer		
-	IF(RebateCorpTaxLumpSum==1) THEN
-		equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer + corptax*(equmTRANS(:)%profit - equmINITSS%profit)
-	END IF
-	IF(RebateCorpTaxLumpSum==2) THEN
-		equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer + (1.0-labtax)*corptax*(equmTRANS(:)%profit - equmINITSS%profit)
-	END IF 
-	equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer * equmTRANS(:)%transfershock	
-	
-	equmTRANS(:)%taxrev = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
-	IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
-	
-	equmTRANS(:)%govexp = equmTRANS(:)%taxrev + (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi) * equmTRANS(:)%govbond
-
-ELSE IF(AdjGovBudgetConstraint==2) THEN  !adjust lump sum taxes
-	equmTRANS(:)%govbond = equmINITSS%govbond * (equmTRANS(:)%pricelev**-fixnomgovdebt)
-	equmTRANS(:)%govexp = equmINITSS%govexp * equmTRANS(:)%govshock
-	equmTRANS(:)%labtax = equmINITSS%labtax
-	equmTRANS(:)%taxrev = equmTRANS(:)%govexp - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi) * equmTRANS(:)%govbond
-	equmTRANS(:)%lumptransfer = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor + corptax*equmTRANS(:)%profit +  (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi) * equmTRANS(:)%govbond - equmTRANS(:)%govexp
-	IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
-
-			
-ELSE IF(AdjGovBudgetConstraint==3) THEN !adjust debt
-	IF(GovExpConstantFracOutput==0) equmTRANS(:)%govexp = equmINITSS%govexp * equmTRANS(:)%govshock
-	IF(GovExpConstantFracOutput==1) equmTRANS(:)%govexp = equmTRANS(:)%output*equmINITSS%govexp/equmINITSS%output
-
-	IF(RebateCorpTaxLumpSum==0) equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer		
-	IF(RebateCorpTaxLumpSum==1) THEN
-		equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer + corptax*(equmTRANS(:)%profit - equmINITSS%profit)
-	END IF
-	IF(RebateCorpTaxLumpSum==2) THEN
-		equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer + (1.0-labtax)*corptax*(equmTRANS(:)%profit - equmINITSS%profit)
-	END IF
-	equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer * equmTRANS(:)%transfershock	
-	 		
-	equmTRANS(:)%taxrev = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
-	IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
-
-	!compute required increase in lumptransfer
-	lrgov = equmTRANS(:)%rb
-	lpvgovbc = equmFINALSS%govbond * (equmTRANS(Ttransition)%pricelev**-fixnomgovdebt)
-	lpvlumpincr = 0.0
-	DO it = Ttransition,1,-1
-		lpvgovbc = (lpvgovbc + deltatransvec(it)*(equmTRANS(it)%govexp - equmTRANS(it)%taxrev))/(1.0+deltatransvec(it)*lrgov(it))
-		IF(cumdeltatrans(it)>=taxincrstart) lpvlumpincr = (lpvlumpincr + deltatransvec(it))/(1.0+deltatransvec(it)*(lrgov(it)+taxincrdecay))
-		IF(cumdeltatrans(it)<taxincrstart) lpvlumpincr = lpvlumpincr/(1.0+deltatransvec(it)*lrgov(it))
-	END DO	
-
-	IF (GovBCFDScheme==1) THEN
-		linitlumpincr = (equmINITSS%govbond-lpvgovbc) / lpvlumpincr
-		DO it = 1,Ttransition
-			IF(cumdeltatrans(it)>=taxincrstart) equmTRANS(it)%lumptransfer = equmTRANS(it)%lumptransfer + linitlumpincr*exp(-taxincrdecay*(cumdeltatrans(it)-taxincrstart))
-		END DO
-	ELSE IF (GovBCFDScheme==2) THEN
-		linitlumpincr = (equmINITSS%govbond-lpvgovbc) / lpvlumpincr
-		ltransfer(1) = linitlumpincr
-		DO it = 1,Ttransition-1
-			ltransfer(it+1) = ltransfer(it) / (1.0 + deltatransvec(it)*taxincrdecay)
-		END DO
-		equmTRANS(:)%lumptransfer =  equmTRANS(:)%lumptransfer + ltransfer
-	END IF
-	
-	equmTRANS(:)%taxrev = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
-	IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
-	
-	IF (GovBCFDScheme==1) THEN
-		equmTRANS(Ttransition)%govbond = equmFINALSS%govbond * (equmTRANS(Ttransition)%pricelev**-fixnomgovdebt)
-		DO it = Ttransition-1,2,-1
-			equmTRANS(it)%govbond = (equmTRANS(it+1)%govbond - deltatransvec(it)*(equmTRANS(it)%taxrev-equmTRANS(it)%govexp)) / (1.0+deltatransvec(it)*lrgov(it))
-		END DO
-		equmTRANS(1)%govbond = equmINITSS%govbond
-	ELSE IF (GovBCFDScheme==2) THEN
-		equmTRANS(1)%govbond = equmINITSS%govbond
-		DO it = 1,Ttransition-1
-			equmTRANS(it+1)%govbond = (1.0+deltatransvec(it)*lrgov(it))*equmTRANS(it)%govbond + deltatransvec(it)*(equmTRANS(it)%taxrev-equmTRANS(it)%govexp) 
-		END DO
-	END IF
-
-
-	equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer + (equmTRANS(:)%rb-lrgov(:))*equmTRANS(:)%govbond
-	equmTRANS(:)%taxrev = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
-	IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
-	
-	
-	
-	
-ELSE IF(AdjGovBudgetConstraint==4) THEN  !adjust proportional tax rate
-	equmTRANS(:)%govbond = equmINITSS%govbond * (equmTRANS(:)%pricelev**-fixnomgovdebt)
-	equmTRANS(:)%govexp = equmINITSS%govexp * equmTRANS(:)%govshock
-	equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer * equmTRANS(:)%transfershock
-	equmTRANS(:)%taxrev = equmTRANS(:)%govexp - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi)*equmTRANS(:)%govbond
-
-	IF(DistributeProfitsInProportion == 0 .or. TaxHHProfitIncome == 0) equmTRANS(:)%labtax  = (equmTRANS(:)%lumptransfer - corptax*equmTRANS(:)%profit - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi)*equmTRANS(:)%govbond + equmTRANS(:)%govexp) / (equmTRANS(:)%wage*equmTRANS(:)%labor)
-	IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%labtax  = (equmTRANS(:)%lumptransfer - corptax*equmTRANS(:)%profit - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi)*equmTRANS(:)%govbond + equmTRANS(:)%govexp) / (equmTRANS(:)%wage*equmTRANS(:)%labor + (1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax))
-
-END IF
-
-!household bond  or interest rate guess
-IF (flextransition==.true. .and. UpdateFlexUsingBond==1) THEN !interest rate implied by constant household bond (because of govt bond)
- 
-	!world bond
-	equmTRANS(:)%worldbond = -equmTRANS(:)%bond - equmTRANS(:)%govbond - equmTRANS(:)%fundbond
-
-	!interest rate
-	it = Ttransition
-	CALL WorldBondInverse2( (equmFINALSS%worldbond-equmTRANS(it)%worldbond)/(bondadjust*deltatransvec(it)) + equmTRANS(it)%worldbond, equmTRANS(it)%rb,equmINITSS%worldbond,equmINITSS%rb,bondelast)
-	DO it = Ttransition-1,1,-1
-		CALL WorldBondInverse2( (equmTRANS(it+1)%worldbond-equmTRANS(it)%worldbond)/(bondadjust*deltatransvec(it)) + equmTRANS(it)%worldbond, equmTRANS(it)%rb,equmINITSS%worldbond,equmINITSS%rb,bondelast)
-	END DO	
-	
-ELSE !household bond implied by constant interest rate
-	
-	!world bond from real rate
-	equmTRANS(1)%worldbond = equmINITSS%worldbond
-	DO it = 1,Ttransition-1
-		CALL WorldBondFunction2( equmTRANS(it)%rb,equmTRANS(it+1)%worldbond,equmINITSS%worldbond,equmINITSS%rb,bondelast)
-		equmTRANS(it+1)%worldbond = equmTRANS(it)%worldbond + bondadjust*deltatransvec(it)*(equmTRANS(it+1)%worldbond-equmTRANS(it)%worldbond)
-	END DO
-	
-	!household bond
-	equmTRANS(:)%bond = -equmTRANS(:)%worldbond - equmTRANS(:)%govbond - equmTRANS(:)%fundbond
-END IF
-
-!borrowing rate
-IF(FixBorrowRateTransition==0) equmTRANS(:)%rborr = equmTRANS(:)%rb + equmTRANS(:)%borrwedge
-IF(FixBorrowRateTransition==1) equmTRANS(:)%rborr = equmINITSS%rb + equmTRANS(:)%borrwedge !allows for shock to borrowing wedge
 
 
 ii = 1	 
 ldiffK = 1.0
 ldiffB = 1.0
+ldiffL = 1.0
 nblviolated = .false.
-DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nblviolated == .false.)
-	!solve for transtion
-	MOVE THIS TO TH LAST THING, RATHERN THATN THE FIRST THING SO WE ONLY HAVE TO DO THINGS ONCE.
-	CALL Transition
-	
-	update capital, laborN, laborY (get capitalN, capitalY probably using an old profit)
-	get output, varieties and go from there.
-	
-	!computed implied equilibrium quantities
-	lbond = statsTRANS(:)%Eb
-	lcapital = (statsTRANS(:)%Ea - equmTRANS(:)%equity)/ (1.0 - equmTRANS(:)%fundlev)
-	IF(ConvergenceRelToOutput==0) THEN
-		ldiffK= maxval(abs(lcapital/equmTRANS(:)%capital - 1.0))
-		ldiffB= maxval(abs(lbond/equmTRANS(:)%bond - 1.0))
-	ELSEIF(ConvergenceRelToOutput==1) THEN
-		ldiffK= maxval(abs(lcapital-equmTRANS(:)%capital)/equmINITSS%output)
-		ldiffB= maxval(abs(lbond-equmTRANS(:)%bond)/equmINITSS%output)
-	END IF
-	IF (Display>=1) write(*,"(A,I,A)") '  Transition iter ',ii, ':'
-	IF (Display>=1) write(*,"(A,E10.3,A,E10.3,A,E10.3)") '   K err',ldiffK, ',  B err',ldiffB
-	IF (Display>=1) write(*,"(A,E14.7,A,E14.7)") '   rb , t=1',equmTRANS(1)%rb,'rb , t=2',equmTRANS(2)%rb
-	IF (Display>=1) write(*,"(A,E14.7,A,E14.7)") '   hh bond, t=2',lbond(2), ',  target',equmTRANS(2)%bond
-	IF (Display>=1) write(*,"(A,E14.7,A,E14.7)") '   capital, t=2',lcapital(2), ',  target',equmTRANS(2)%capital
-	
-	IF (ii<maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition ) THEN
-
-		!update capital
-		CALL PartialUpdate(Ttransition-1,stepK,equmTRANS(2:Ttransition)%capital,lcapital(2:Ttransition),lcapital1(2:Ttransition))
-		lcapital1(1)  = equmTRANS(1)%capital
-		equmTRANS(:)%capital = lcapital1
+DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB,ldiffL)>toltransition .and. nblviolated == .false.)
 		
-		!fund bond
-		equmTRANS(:)%fundbond = -equmTRANS(:)%capital*equmTRANS(:)%fundlev
-		
-		
-		IF((flextransition==.true.) .and. (UpdateFlexUsingBond==1)) THEN !update using B
-
-			CALL PartialUpdate(Ttransition-1,stepB,equmTRANS(2:Ttransition)%bond,lbond(2:Ttransition),lbond1(2:Ttransition))
-			lbond1(1)  = equmTRANS(1)%bond
-			equmTRANS(:)%bond = lbond1
-
-		ELSE  !update using rb
-
-			!interest rate implied by world bond
-			lworldbond = -lbond - equmTRANS(:)%govbond - equmTRANS(:)%fundbond
-
-			it = Ttransition
-			CALL WorldBondInverse2( (equmFINALSS%worldbond-lworldbond(it))/(bondadjust*deltatransvec(it)) + lworldbond(it) ,lrb(it),equmINITSS%worldbond,equmINITSS%rb,bondelast)
-			DO it = Ttransition-1,1,-1
-				CALL WorldBondInverse2( (lworldbond(it+1)-lworldbond(it))/(bondadjust*deltatransvec(it)) + lworldbond(it) ,lrb(it),equmINITSS%worldbond,equmINITSS%rb,bondelast)
-			END DO
-		
-			IF((flextransition==.true.) .and. (UpdateFlexUsingBond==1)) THEN !update using B
-				equmTRANS(:)%rb = lrb
-			ELSE	!update using rb
-				CALL PartialUpdate(Ttransition,stepB,equmTRANS(:)%rb,lrb,lrb1)
-				equmTRANS(:)%rb = lrb1			
-			END IF
-
-		END IF
-			
-	ElSE
-! 		!run distribution stats with full
-		iteratingtransition = .false.
-		CALL Transition
-		equmTRANS(:)%capital = lcapital
-		equmTRANS(:)%bond = lbond
-!   		equmTRANS(:)%rb = lrb
-
-	END IF
-	
-	
-
 	!inflation and nominal interest 
 	IF (flextransition == .true.) THEN
 		equmTRANS(:)%pi = (equmTRANS(:)%rb - equmINITSS%rnom - equmTRANS(:)%mpshock) / (phitaylor-1.0) !taylor rule
@@ -474,16 +157,16 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 			END DO
 		END IF
 	END IF
-
+	
 	!price level 
 	equmTRANS(1)%pricelev = 1.0
 	DO it = 1,Ttransition-1
 		equmTRANS(it+1)%pricelev = equmTRANS(it)%pricelev / (1.0 - deltatransvec(it)*equmTRANS(it)%pi)
 	END DO
 	
-	!marginal costs
+	!wholesale price
 	IF (flextransition == .true.) THEN
-		equmTRANS(:)%mc = (equmTRANS(:)%elast-1.0)/equmTRANS(:)%elast
+		equmTRANS(:)%price_W = 1.0 -1.0/equmTRANS(:)%elast
 
 	ELSE IF (flextransition == .false.) THEN
 
@@ -496,89 +179,78 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 
 		!final period of transition
 		it = Ttransition
-		equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmFINALSS%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
-												- alpha*(equmFINALSS%capital-equmTRANS(it)%capital)/(equmTRANS(it)%capital*deltatransvec(it)) &
-												- alpha*(equmFINALSS%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
-												- (1.0-alpha)*(equmFINALSS%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmFINALSS%pi * priceadjcost/ equmTRANS(it)%elast &
-												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
-		equmTRANS(it)%mc = max(lminprice_W,equmTRANS(it)%mc)
+		equmTRANS(it)%price_W = (lfirmdiscount(it) 	- (equmFINALSS%totoutput-equmTRANS(it)%totoutput)/(equmTRANS(it)%totoutput*deltatransvec(it)) &
+												 ) * equmFINALSS%pi * priceadjcost * equmTRANS(it)%varieties/ equmTRANS(it)%elast &
+												+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmFINALSS%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost * equmTRANS(it)%varieties / equmTRANS(it)%elast
+		equmTRANS(it)%price_W = max(lminprice_W,equmTRANS(it)%price_W)
 
 		!solve backwards
 		DO it = Ttransition-1,1,-1
-			equmTRANS(it)%mc = (lfirmdiscount(it) 	- (equmTRANS(it+1)%tfp-equmTRANS(it)%tfp)/(equmTRANS(it)%tfp*deltatransvec(it)) &
-													- alpha*(equmTRANS(it+1)%capital-equmTRANS(it)%capital)/(equmTRANS(it)%capital*deltatransvec(it)) &
-													- alpha*(equmTRANS(it+1)%caputil-equmTRANS(it)%caputil)/(equmTRANS(it)%caputil*deltatransvec(it)) &
-													- (1.0-alpha)*(equmTRANS(it+1)%labor-equmTRANS(it)%labor)/(equmTRANS(it)%labor*deltatransvec(it)) ) *equmTRANS(it+1)%pi * priceadjcost/ equmTRANS(it)%elast &
-													+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost/ equmTRANS(it)%elast
-			equmTRANS(it)%mc = max(lminprice_W,equmTRANS(it)%mc)
+			equmTRANS(it)%price_W = (lfirmdiscount(it) 	- (equmTRANS(it+1)%totoutput-equmTRANS(it)%totoutput)/(equmTRANS(it)%totoutput*deltatransvec(it)) &
+													 ) * equmTRANS(it+1)%pi * priceadjcost * equmTRANS(it)%varieties/ equmTRANS(it)%elast &
+													+ (equmTRANS(it)%elast-1.0)/equmTRANS(it)%elast - ((equmTRANS(it+1)%pi-equmTRANS(it)%pi)/deltatransvec(it)) * priceadjcost * equmTRANS(it)%varieties / equmTRANS(it)%elast
+			equmTRANS(it)%price_W = max(lminprice_W,equmTRANS(it)%price_W)
 
 		END DO
 	END IF
+	
+	!quantities
+	equmTRANS(:)%K_totoutput_ratio = equmTRANS(:)%capital/equmTRANS(:)%totoutput
+	
+	equmTRANS(:)%rcapital = (equmTRANS(:)%price_W*alpha_Y*drs_Y + (1.0-equmTRANS(:)%price_W)*alpha_N*drs_N)/equmTRANS(:)%K_totoutput_ratio
+	lKYY = equmTRANS(:)%price_W*alpha_Y*drs_Y/equmTRANS(:)%rcapital
+	equmTRANS(:)%output = (equmTRANS(:)%tfp_Y**(1.0/(1.0-alpha_Y*drs_Y))) *((lKYY**alpha_Y)*(equmTRANS(:)%labor_Y**(1.0-alpha_Y)))**(drs_Y/(1.0-alpha_Y*drs_Y))
+	lKNN = (1.0-equmTRANS(:)%price_W)*alpha_N*drs_N*equmTRANS(:)%output/equmTRANS(:)%rcapital
+	equmTRANS(:)%varieties = (equmTRANS(:)%tfp_N**(1.0/(1.0-alpha_N*drs_N))) *((lKNN**alpha_N)*(equmTRANS(:)%labor_N**(1.0-alpha_N)))**(drs_N/(1.0-alpha_N*drs_N))
+	equmTRANS(:)%totoutput = equmTRANS(:)%output*equmTRANS(:)%varieties
 
-	!labor
-	equmTRANS(:)%labor = statsTRANS(:)%Elabor
+	!profits
+	equmTRANS(:)%grossprofit_W = equmTRANS(:)%price_W * equmTRANS(:)%output*(1.0-drs_Y)
+	equmTRANS(:)%netprofit_W = equmTRANS(:)%varieties * equmTRANS(:)%grossprofit_W
+	equmTRANS(:)%grossprofit_R = (1.0-equmTRANS(:)%price_W)*equmTRANS(:)%output
+	equmTRANS(:)%netprofit_R = equmTRANS(:)%varieties * (1.0-drs_N) * equmTRANS(:)%grossprofit_R
+	equmTRANS(:)%profit = equmTRANS(:)%netprofit_R + equmTRANS(:)%netprofit_W
+	equmTRANS(:)%dividend_A = profdistfracA * equmTRANS(:)%profit*(1.0-corptax)
+	equmTRANS(:)%dividend_B = profdistfracB * equmTRANS(:)%profit*(1.0-corptax)
+	
+	
+	!wages
+	equmTRANS(:)%wage_Y = equmTRANS(:)%price_W*(1.0-alpha_Y)*drs_Y * equmTRANS(:)%output/ equmTRANS(:)%labor_Y
+	equmTRANS(:)%mc_Y = (1.0/tfp_Y)*((equmTRANS(:)%rcapital/alpha_Y)**alpha_Y) *((equmTRANS(:)%wage_Y/(1.0-alpha_Y))**(1.0-alpha_Y))
+	equmTRANS(:)%wage_N = equmTRANS(:)%grossprofit_R * (1.0-alpha_N)*drs_N* equmTRANS(:)%varieties / equmTRANS(:)%labor_N
+	equmTRANS(:)%mc_N = (1.0/equmTRANS(:)%tfp_N)*((equmTRANS(:)%rcapital/alpha_N)**alpha_N) *((equmTRANS(:)%wage_N/(1.0-alpha_N))**(1.0-alpha_N))
 
-	!other eqm variables
-	equmTRANS(:)%gap = equmTRANS(:)%elast*equmTRANS(:)%mc / (equmTRANS(:)%elast-1.0) - 1.0
-	equmTRANS(:)%tfpadj = (equmTRANS(:)%tfp**((1.0+utilelast)/utilelastalpha)) * ((equmTRANS(:)%mc*alpha/equmINITSS%rcapital)**(alpha*utilelast/utilelastalpha))
-	equmTRANS(:)%KNratio = equmTRANS(:)%capital/equmTRANS(:)%labor
-	equmTRANS(:)%wage = equmTRANS(:)%mc*(1.0-alpha)* equmTRANS(:)%tfpadj * (equmTRANS(:)%KNratio**(alpha/utilelastalpha))
-	equmTRANS(:)%netwage = (1.0-equmTRANS(:)%labtax)*equmTRANS(:)%wage
-	equmTRANS(:)%caputil = ((equmTRANS(:)%mc*alpha*equmTRANS(:)%tfp/equmINITSS%rcapital) * equmTRANS(:)%KNratio**(alpha-1.0)) ** (utilelast/utilelastalpha)
-	equmTRANS(:)%output = equmTRANS(:)%tfpadj * (equmTRANS(:)%capital**(alpha/utilelastalpha)) * (equmTRANS(:)%labor**((1.0-alpha)*(1.0+utilelast)/utilelastalpha))
-	equmTRANS(:)%KYratio = (equmTRANS(:)%KNratio**(1.0-alpha)) / (equmTRANS(:)%tfp* (equmTRANS(:)%caputil**alpha))
-	equmTRANS(:)%rcapital = ((equmINITSS%rcapital**utilelast) * equmTRANS(:)%mc * alpha / equmTRANS(:)%KYratio ) ** (1.0/(1.0+utilelast))
-	IF (flextransition == .true.) equmTRANS(:)%priceadjust = 0.0
-	IF (flextransition == .false.) equmTRANS(:)%priceadjust = (priceadjcost/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%capital/equmTRANS(:)%KYratio
-	equmTRANS(:)%profit = (1.0-equmTRANS(:)%mc)*equmTRANS(:)%capital/equmTRANS(:)%KYratio - equmTRANS(:)%priceadjust
-
-	equmTRANS(:)%deprec = equmINITSS%deprec + (utilelast*equmINITSS%rcapital/(1.0+ utilelast)) * ((equmTRANS(:)%rcapital/equmINITSS%rcapital)**(1.0+utilelast) -1.0)
-
-	!solve backward for investment
+	equmTRANS(:)%ra = equmTRANS(:)%rcapital - deprec
+	
+	!value of equity
 	it = Ttransition
-	equmTRANS(it)%investment = (equmFINALSS%capital-equmTRANS(it)%capital)/deltatransvec(it) + equmTRANS(it)%deprec*equmTRANS(it)%capital
+	equmTRANS(it)%equity_A = (equmFINALSS%equity_A + equmTRANS(it)%dividend_A*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%ra)		
+	equmTRANS(it)%equity_B = (equmFINALSS%equity_B + equmTRANS(it)%dividend_B*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%rb)		
 	DO it = Ttransition-1,1,-1
-		equmTRANS(it)%investment = (equmTRANS(it+1)%capital-equmTRANS(it)%capital)/deltatransvec(it) + equmTRANS(it)%deprec*equmTRANS(it)%capital
+		equmTRANS(it)%equity_A = (equmTRANS(it+1)%equity_A + equmTRANS(it)%dividend_A*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%ra)		
+		equmTRANS(it)%equity_B = (equmTRANS(it+1)%equity_B + equmTRANS(it)%dividend_B*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%rb)		
 	END DO
+	equmTRANS(:)%assetdrop_A = (equmTRANS(1)%capital + equmTRANS(1)%equity_A) / (equmINITSS%capital + equmINITSS%equity_A)
+	equmTRANS(:)%assetdrop_B = equmTRANS(1)%bond / equmINITSS%bond
 
-	!dividends and illiquid return
-	IF(FixProfitsOutOfSteadyState==0) equmTRANS(:)%dividend 	= equmTRANS(:)%profit*(1.0-corptax)
-	IF(FixProfitsOutOfSteadyState==1) equmTRANS(:)%dividend 	= equmINITSS%profit*(1.0-corptax)
-	IF(DistributeProfitsInProportion==1) equmTRANS(:)%dividend  = profdistfrac*equmTRANS(:)%dividend
-
-	IF(DividendFundLumpSum==1) equmTRANS(:)%divrate = 0.0
-	IF(DividendFundLumpSum==0) equmTRANS(:)%divrate = equmTRANS(:)%dividend/equmTRANS(:)%capital
-
-	equmTRANS(:)%ra = (equmTRANS(:)%rcapital*equmTRANS(:)%caputil - equmTRANS(:)%deprec + equmTRANS(:)%divrate - equmTRANS(:)%fundlev*equmTRANS(:)%rb) / (1.0-equmTRANS(:)%fundlev)
-
-	!value of equity component of investmemt fund
-	IF(DividendFundLumpSum==0) THEN
-		equmTRANS(:)%equity = 0.0
-		equmTRANS(:)%illassetdrop = 1.0	
-	ELSE IF(DividendFundLumpSum==1) THEN
-		it = Ttransition
-		equmTRANS(it)%equity = (equmFINALSS%equity + equmTRANS(it)%dividend*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%ra)		
-		DO it = Ttransition-1,1,-1
-			equmTRANS(it)%equity = (equmTRANS(it+1)%equity + equmTRANS(it)%dividend*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%ra)		
-		END DO
-		equmTRANS(:)%illassetdrop = ((1.0-equmTRANS(1)%fundlev)*equmTRANS(1)%capital + equmTRANS(1)%equity) / ((1.0-equmINITSS%fundlev)*equmINITSS%capital + equmINITSS%equity)
-	END IF
-
+	!investment
+	equmTRANS(:)%caputil = equmINITSS%caputil
+	
+	it = Ttransition
+	equmTRANS(it)%investment = (equmFINALSS%capital-equmTRANS(it)%capital)/deltatransvec(it) + deprec*equmTRANS(it)%capital
+	DO it = Ttransition-1,1,-1
+		equmTRANS(it)%investment = (equmTRANS(it+1)%capital-equmTRANS(it)%capital)/deltatransvec(it) + deprec*equmTRANS(it)%capital
+	END DO
+	
 	!government budget constraint,expenditures and tax rates
 	IF (AdjGovBudgetConstraint==1) THEN !adjust spending
 		equmTRANS(:)%govbond = equmINITSS%govbond * (equmTRANS(:)%pricelev**-fixnomgovdebt)
 		equmTRANS(:)%labtax = equmINITSS%labtax
-		IF(RebateCorpTaxLumpSum==0) equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer		
-		IF(RebateCorpTaxLumpSum==1) THEN
-			equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer + corptax*(equmTRANS(:)%profit - equmINITSS%profit)
-		END IF
-		IF(RebateCorpTaxLumpSum==2) THEN
-			equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer + (1.0-labtax)*corptax*(equmTRANS(:)%profit - equmINITSS%profit)
-		END IF 
+		equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer		
 		equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer * equmTRANS(:)%transfershock	
 	
-		equmTRANS(:)%taxrev = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
-		IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
+		equmTRANS(:)%taxrev = equmTRANS(:)%labtax*(equmTRANS(:)%wage_Y*equmTRANS(:)%labor_Y +equmTRANS(:)%wage_N*equmTRANS(:)%labor_N) - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
+		IF(TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*profdistfracW*equmTRANS(:)%profit*(1.0-corptax)
 	
 		equmTRANS(:)%govexp = equmTRANS(:)%taxrev + (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi) * equmTRANS(:)%govbond
 
@@ -587,25 +259,18 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 		equmTRANS(:)%govexp = equmINITSS%govexp * equmTRANS(:)%govshock
 		equmTRANS(:)%labtax = equmINITSS%labtax
 		equmTRANS(:)%taxrev = equmTRANS(:)%govexp - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi) * equmTRANS(:)%govbond
-		equmTRANS(:)%lumptransfer = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor + corptax*equmTRANS(:)%profit +  (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi) * equmTRANS(:)%govbond - equmTRANS(:)%govexp
-		IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
+		equmTRANS(:)%lumptransfer = equmTRANS(:)%labtax*(equmTRANS(:)%wage_Y*equmTRANS(:)%labor_Y +equmTRANS(:)%wage_N*equmTRANS(:)%labor_N) + corptax*equmTRANS(:)%profit +  (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi) * equmTRANS(:)%govbond - equmTRANS(:)%govexp
+		IF(TaxHHProfitIncome == 1) equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer + equmTRANS(:)%labtax*profdistfracW*equmTRANS(:)%profit*(1.0-corptax)
 
 			
 	ELSE IF(AdjGovBudgetConstraint==3) THEN !adjust debt
 		IF(GovExpConstantFracOutput==0) equmTRANS(:)%govexp = equmINITSS%govexp * equmTRANS(:)%govshock
 		IF(GovExpConstantFracOutput==1) equmTRANS(:)%govexp = equmTRANS(:)%output*equmINITSS%govexp/equmINITSS%output
 
-		IF(RebateCorpTaxLumpSum==0) equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer		
-		IF(RebateCorpTaxLumpSum==1) THEN
-			equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer + corptax*(equmTRANS(:)%profit - equmINITSS%profit)
-		END IF
-		IF(RebateCorpTaxLumpSum==2) THEN
-			equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer + (1.0-labtax)*corptax*(equmTRANS(:)%profit - equmINITSS%profit)
-		END IF
-		equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer * equmTRANS(:)%transfershock	
+		equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer	 * equmTRANS(:)%transfershock	
 	 		
-		equmTRANS(:)%taxrev = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
-		IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
+		equmTRANS(:)%taxrev = equmTRANS(:)%labtax*(equmTRANS(:)%wage_Y*equmTRANS(:)%labor_Y +equmTRANS(:)%wage_N*equmTRANS(:)%labor_N) - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
+		IF(TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*profdistfracW*equmTRANS(:)%profit*(1.0-corptax)
 
 		!compute required increase in lumptransfer
 		lrgov = equmTRANS(:)%rb
@@ -631,8 +296,8 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 			equmTRANS(:)%lumptransfer =  equmTRANS(:)%lumptransfer + ltransfer
 		END IF
 		
-		equmTRANS(:)%taxrev = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
-		IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
+		equmTRANS(:)%taxrev = equmTRANS(:)%labtax*(equmTRANS(:)%wage_Y*equmTRANS(:)%labor_Y +equmTRANS(:)%wage_N*equmTRANS(:)%labor_N) - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
+		IF(TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*profdistfracW*equmTRANS(:)%profit*(1.0-corptax)
 		
 		IF (GovBCFDScheme==1) THEN
 			equmTRANS(Ttransition)%govbond = equmFINALSS%govbond * (equmTRANS(Ttransition)%pricelev**-fixnomgovdebt)
@@ -648,10 +313,10 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 		END IF
 
 		equmTRANS(:)%lumptransfer = equmTRANS(:)%lumptransfer + (equmTRANS(:)%rb-lrgov(:))*equmTRANS(:)%govbond
-		equmTRANS(:)%taxrev = equmTRANS(:)%labtax*equmTRANS(:)%wage*equmTRANS(:)%labor - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
-		IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*(1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax)
+		equmTRANS(:)%taxrev = equmTRANS(:)%labtax*(equmTRANS(:)%wage_Y*equmTRANS(:)%labor_Y +equmTRANS(:)%wage_N*equmTRANS(:)%labor_N) - equmTRANS(:)%lumptransfer + corptax*equmTRANS(:)%profit
+		IF(TaxHHProfitIncome == 1) equmTRANS(:)%taxrev = equmTRANS(:)%taxrev + equmTRANS(:)%labtax*profdistfracW*equmTRANS(:)%profit*(1.0-corptax)
 	
-	
+		
 	
 	
 	ELSE IF(AdjGovBudgetConstraint==4) THEN  !adjust proportional tax rate
@@ -660,17 +325,16 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 		equmTRANS(:)%lumptransfer = equmINITSS%lumptransfer * equmTRANS(:)%transfershock
 		equmTRANS(:)%taxrev = equmTRANS(:)%govexp - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi)*equmTRANS(:)%govbond
 
-		IF(DistributeProfitsInProportion == 0 .or. TaxHHProfitIncome == 0) equmTRANS(:)%labtax  = (equmTRANS(:)%lumptransfer - corptax*equmTRANS(:)%profit - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi)*equmTRANS(:)%govbond + equmTRANS(:)%govexp) / (equmTRANS(:)%wage*equmTRANS(:)%labor)
-		IF(DistributeProfitsInProportion == 1 .and. TaxHHProfitIncome == 1) equmTRANS(:)%labtax  = (equmTRANS(:)%lumptransfer - corptax*equmTRANS(:)%profit - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi)*equmTRANS(:)%govbond + equmTRANS(:)%govexp) / (equmTRANS(:)%wage*equmTRANS(:)%labor + (1.0-profdistfrac)*equmTRANS(:)%profit*(1.0-corptax))
+		IF(TaxHHProfitIncome == 0) equmTRANS(:)%labtax  = (equmTRANS(:)%lumptransfer - corptax*equmTRANS(:)%profit - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi)*equmTRANS(:)%govbond + equmTRANS(:)%govexp) / (equmTRANS(:)%wage_Y*equmTRANS(:)%labor_Y + equmTRANS(:)%wage_N*equmTRANS(:)%labor_N)
+		IF(TaxHHProfitIncome == 1) equmTRANS(:)%labtax  = (equmTRANS(:)%lumptransfer - corptax*equmTRANS(:)%profit - (equmTRANS(:)%rb + fixnomgovdebt*equmTRANS(:)%pi)*equmTRANS(:)%govbond + equmTRANS(:)%govexp) / (equmTRANS(:)%wage_Y*equmTRANS(:)%labor_Y + equmTRANS(:)%wage_N*equmTRANS(:)%labor_N + profdistfracW*equmTRANS(:)%profit*(1.0-corptax))
 
 	END IF
-
 
 	!household bond  or interest rate update  (because of govt bond)	
 	IF (flextransition==.true. .and. UpdateFlexUsingBond==1) THEN 
 		
 		!world bond
-		equmTRANS(:)%worldbond = -equmTRANS(:)%bond - equmTRANS(:)%govbond - equmTRANS(:)%fundbond
+		equmTRANS(:)%worldbond = -equmTRANS(:)%bond - equmTRANS(:)%govbond
 
 		!interest rate
 		it = Ttransition
@@ -688,16 +352,143 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB)>toltransition .and. nb
 		END DO
 		
 		!household bond
-		equmTRANS(:)%bond = -equmTRANS(:)%worldbond - equmTRANS(:)%govbond - equmTRANS(:)%fundbond
+		equmTRANS(:)%bond = -equmTRANS(:)%worldbond - equmTRANS(:)%govbond
 	END IF
 	
 	!borrowing rate
 	IF(FixBorrowRateTransition==0) equmTRANS(:)%rborr = equmTRANS(:)%rb + equmTRANS(:)%borrwedge
 	IF(FixBorrowRateTransition==1) equmTRANS(:)%rborr = equmINITSS%rb + equmTRANS(:)%borrwedge !allows for shock to borrowing wedge
+
+
+	!CHECK
+! 	write(*,*) ''
+! 	write(*,*) ' ra ',equmINITSS%ra,equmTRANS(:)%ra
+! 	write(*,*) ' rb ',equmINITSS%rb,equmTRANS(:)%rb
+! 	write(*,*) ' price_W',equmINITSS%price_W,equmTRANS(:)%price_W
+! 	write(*,*) ' dividend_A',equmINITSS%equity_A,equmTRANS(:)%dividend_A
+! 	write(*,*) ' equity_A',equmINITSS%equity_A,equmTRANS(:)%equity_A
+! 	write(*,*) ' profit',equmINITSS%profit,equmTRANS(:)%profit
+! 	write(*,*) ' netprofit_R',equmINITSS%netprofit_R,equmTRANS(:)%netprofit_R
+! 	write(*,*) ' netprofit_W',equmINITSS%netprofit_W,equmTRANS(:)%netprofit_W
+! 	write(*,*) ' wage_Y',equmINITSS%wage_Y,equmTRANS(:)%wage_Y
+! 	write(*,*) ' wage_N',equmINITSS%wage_N,equmTRANS(:)%wage_N
+! 	write(*,*) ' pi',equmINITSS%pi,equmTRANS(:)%pi
+! 	write(*,*) ' bond',equmINITSS%bond,equmTRANS(:)%bond
+! 	write(*,*) ' capital',equmINITSS%capital,equmTRANS(:)%capital
+! 	write(*,*) ' capital_N',equmINITSS%capital_N,equmTRANS(:)%capital_N
+! 	write(*,*) ' capital_Y',equmINITSS%capital_N,equmTRANS(:)%capital_Y
+! 	write(*,*) ' output',equmINITSS%output,equmTRANS(:)%output
+! 	write(*,*) ' lump',equmINITSS%lumptransfer,equmTRANS(:)%lumptransfer
+! 	write(*,*) ' labor_Y',equmINITSS%labor_Y,equmTRANS(:)%labor_Y
+! 	write(*,*) ' rcapital',equmINITSS%rcapital,equmTRANS(:)%rcapital
+! 	write(*,*) ' '
+!
+! 	STOP
+
+	!transition
+	CALL Transition
 	
+	!implied capital, bond, labor
+	lcapital = statsTRANS(:)%Ea - equmTRANS(:)%equity_A		
+	lbond = statsTRANS(:)%Eb
+	llabor_Y = statsTRANS(:)%Elabor_Y/equmTRANS(:)%varieties
+	llabor_N = statsTRANS(:)%Elabor_N
+
+	
+	!check convergence: needs to be fixed: 
+	IF(ConvergenceRelToOutput==0) THEN
+		ldiffK= maxval(abs(lcapital/equmTRANS(:)%capital - 1.0))
+		ldiffB= maxval(abs(lbond/equmTRANS(:)%bond - 1.0))
+	ELSEIF(ConvergenceRelToOutput==1) THEN
+		ldiffK= maxval(abs(lcapital-equmTRANS(:)%capital)/equmINITSS%output)
+		ldiffB= maxval(abs(lbond-equmTRANS(:)%bond)/equmINITSS%output)
+	END IF
+	ldiffL= max(maxval(abs(llabor_Y/equmTRANS(:)%labor_Y - 1.0)),maxval(abs(llabor_N/equmTRANS(:)%labor_N - 1.0)) )
+
+	IF (Display>=1) THEN
+		write(*,"(A,I,A)") '  Transition iter ',ii, ':'
+		write(*,"(A,E10.3,A,E10.3,A,E10.3)") '   K err',ldiffK, ',  B err',ldiffB, ',  L err',ldiffL
+		write(*,"(A,E14.7,A,E14.7)") '   rb , t=1',equmTRANS(1)%rb,'rb , t=2',equmTRANS(2)%rb
+		write(*,"(A,E14.7,A,E14.7)") '   bond, t=2',lbond(2), ',  target',equmTRANS(2)%bond
+		write(*,"(A,E14.7,A,E14.7)") '   capital, t=2',lcapital(2), ',  target',equmTRANS(2)%capital
+		write(*,"(A,E14.7,A,E14.7)") '   labor_Y, t=1',llabor_Y(1), ',  target',equmTRANS(1)%labor_Y
+		write(*,"(A,E14.7,A,E14.7)") '   labor_N, t=1',llabor_N(1), ',  target',equmTRANS(1)%labor_N
+	END IF
+
+	!updates
+	IF (ii<maxitertranssticky .and. max(ldiffK,ldiffB,ldiffL)>toltransition ) THEN
+
+		!update capital
+		CALL PartialUpdate(Ttransition-1,stepK,equmTRANS(2:Ttransition)%capital,lcapital(2:Ttransition),lcapital1(2:Ttransition))
+		lcapital1(1)  = equmTRANS(1)%capital
+		equmTRANS(:)%capital = lcapital1
+	
+		!update rb using bond
+		lworldbond = -lbond - equmTRANS(:)%govbond
+		it = Ttransition
+		CALL WorldBondInverse2( (equmFINALSS%worldbond-lworldbond(it))/(bondadjust*deltatransvec(it)) + lworldbond(it) ,lrb(it),equmINITSS%worldbond,equmINITSS%rb,bondelast)
+		DO it = Ttransition-1,1,-1
+			CALL WorldBondInverse2( (lworldbond(it+1)-lworldbond(it))/(bondadjust*deltatransvec(it)) + lworldbond(it) ,lrb(it),equmINITSS%worldbond,equmINITSS%rb,bondelast)
+		END DO		
+		CALL PartialUpdate(Ttransition,stepB,equmTRANS(:)%rb,lrb,lrb1)
+		equmTRANS(:)%rb = lrb1
+
+		!update labor
+		CALL PartialUpdate(Ttransition,stepL,equmTRANS(:)%labor_Y,llabor_Y,llabor_Y1)
+		CALL PartialUpdate(Ttransition,stepL,equmTRANS(:)%labor_N,llabor_N,llabor_N1)
+		equmTRANS(:)%labor_Y = llabor_Y1
+		equmTRANS(:)%labor_N = llabor_N1
+
+	END IF		
+
+	
+
+
+! !
+! !
+! !
+! ! 	!labor
+! ! 	equmTRANS(:)%labor = statsTRANS(:)%Elabor
+! !
+! ! 	!other eqm variables
+! ! 	equmTRANS(:)%gap = equmTRANS(:)%elast*equmTRANS(:)%mc / (equmTRANS(:)%elast-1.0) - 1.0
+! ! 	equmTRANS(:)%tfpadj = (equmTRANS(:)%tfp**((1.0+utilelast)/utilelastalpha)) * ((equmTRANS(:)%mc*alpha/equmINITSS%rcapital)**(alpha*utilelast/utilelastalpha))
+! ! 	equmTRANS(:)%KNratio = equmTRANS(:)%capital/equmTRANS(:)%labor
+! ! 	equmTRANS(:)%wage = equmTRANS(:)%mc*(1.0-alpha)* equmTRANS(:)%tfpadj * (equmTRANS(:)%KNratio**(alpha/utilelastalpha))
+! ! 	equmTRANS(:)%netwage = (1.0-equmTRANS(:)%labtax)*equmTRANS(:)%wage
+! ! 	equmTRANS(:)%caputil = ((equmTRANS(:)%mc*alpha*equmTRANS(:)%tfp/equmINITSS%rcapital) * equmTRANS(:)%KNratio**(alpha-1.0)) ** (utilelast/utilelastalpha)
+! ! 	equmTRANS(:)%output = equmTRANS(:)%tfpadj * (equmTRANS(:)%capital**(alpha/utilelastalpha)) * (equmTRANS(:)%labor**((1.0-alpha)*(1.0+utilelast)/utilelastalpha))
+! ! 	equmTRANS(:)%KYratio = (equmTRANS(:)%KNratio**(1.0-alpha)) / (equmTRANS(:)%tfp* (equmTRANS(:)%caputil**alpha))
+! ! 	equmTRANS(:)%rcapital = ((equmINITSS%rcapital**utilelast) * equmTRANS(:)%mc * alpha / equmTRANS(:)%KYratio ) ** (1.0/(1.0+utilelast))
+! ! 	IF (flextransition == .true.) equmTRANS(:)%priceadjust = 0.0
+! ! 	IF (flextransition == .false.) equmTRANS(:)%priceadjust = (priceadjcost/2.0)*(equmTRANS(:)%pi**2)*equmTRANS(:)%capital/equmTRANS(:)%KYratio
+! ! 	equmTRANS(:)%profit = (1.0-equmTRANS(:)%mc)*equmTRANS(:)%capital/equmTRANS(:)%KYratio - equmTRANS(:)%priceadjust
+! !
+! ! 	equmTRANS(:)%deprec = equmINITSS%deprec + (utilelast*equmINITSS%rcapital/(1.0+ utilelast)) * ((equmTRANS(:)%rcapital/equmINITSS%rcapital)**(1.0+utilelast) -1.0)
+! !
+!
+!
+! 	!dividends and illiquid return
+!
+! 	equmTRANS(:)%ra = (equmTRANS(:)%rcapital*equmTRANS(:)%caputil - equmTRANS(:)%deprec + equmTRANS(:)%divrate - equmTRANS(:)%fundlev*equmTRANS(:)%rb) / (1.0-equmTRANS(:)%fundlev)
+!
+! 	!value of equity component of investmemt fund
+! 	it = Ttransition
+! 	equmTRANS(it)%equity = (equmFINALSS%equity + equmTRANS(it)%dividend*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%ra)
+! 	DO it = Ttransition-1,1,-1
+! 		equmTRANS(it)%equity = (equmTRANS(it+1)%equity + equmTRANS(it)%dividend*deltatransvec(it)) / (1.0+deltatransvec(it)*equmTRANS(it)%ra)
+! 	END DO
+! 	equmTRANS(:)%illassetdrop = ((1.0-equmTRANS(1)%fundlev)*equmTRANS(1)%capital + equmTRANS(1)%equity) / ((1.0-equmINITSS%fundlev)*equmINITSS%capital + equmINITSS%equity)
+!
+
 	
 	ii = ii+1	
 END DO
+
+!run distribution stats with full
+iteratingtransition = .false.
+CALL Transition
+
 
 IF(stickytransition==.true.) THEN
 	irfpointer%equmSTICKY = equmTRANS

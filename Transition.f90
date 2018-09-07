@@ -10,7 +10,6 @@ INTEGER						:: it,iw(nab),iaby,ia,ib,iy,iab
 REAL(8), DIMENSION(nab) 	:: ldavec,ldbvec,ldiag
 REAL(8) 					:: ltau,ltau0
 TYPE(tCSR_di),DIMENSION(ngpy) 	 :: AUMF     !umfpack type
-REAL(8) 					:: lbgrid(ngpb,Ttransition),lbmin,holdbgrid(ngpb)
 REAL(8), DIMENSION(nab,ngpy) 	:: lgmat,lgmat1
 REAL(8), DIMENSION(ngpa,ngpb,ngpy) 	:: lgjoint
 REAL(8), DIMENSION(ngpy,ngpy) 	:: leye,lmat
@@ -27,7 +26,6 @@ DO iab = 1,nab
 END DO
 !$OMP END PARALLEL DO
 
-holdbgrid = bgrid
 
 !solve backward
 DO it = Ttransition,1,-1
@@ -43,45 +41,45 @@ DO it = Ttransition,1,-1
 	ra = equmTRANS(it)%ra
 	rborr = equmTRANS(it)%rborr
 	borrwedge = equmTRANS(it)%borrwedge
-	wage = equmTRANS(it)%wage
-	netwage = equmTRANS(it)%netwage
+	wage_Y = equmTRANS(it)%wage_Y
+	wage_N = equmTRANS(it)%wage_N
 	labtax = equmTRANS(it)%labtax
 	lumptransfer = equmTRANS(it)%lumptransfer
 	rb = equmTRANS(it)%rb
-	tfp = equmTRANS(it)%tfp
+	tfp_Y = equmTRANS(it)%tfp_Y
+	tfp_N = equmTRANS(it)%tfp_N
 	kappa0_w = equmTRANS(it)%kappa0_w	
 	IF (SymmetricAdjustmentCost) kappa0_d = kappa0_w
 	kappa1_w = equmTRANS(it)%kappa1_w	
 	IF (SymmetricAdjustmentCost) kappa1_d = kappa1_w
 	mpshock = equmTRANS(it)%mpshock
 	prefshock = equmTRANS(it)%prefshock
-	fundlev = equmTRANS(it)%fundlev
-	fundbond = equmTRANS(it)%fundbond
 	worldbond = equmTRANS(it)%worldbond
 	elast = equmTRANS(it)%elast
 	gam = equmTRANS(it)%gam
 	profit = equmTRANS(it)%profit
 	finwedge = equmTRANS(it)%finwedge
 	labwedge = equmTRANS(it)%labwedge
-	ygrid = equmTRANS(it)%ygrid
+	yprodgrid = equmTRANS(it)%yprodgrid
 	prodmarkovscale = equmTRANS(it)%prodmarkovscale
+	netwagegrid = (1.0-labtax) * equmTRANS(it)%yprodgrid * ( equmTRANS(it)%wage_N*yoccgrid + equmTRANS(it)%wage_Y*(1.0-yoccgrid) )
 	
 	
-!     IF(it==1) THEN
-!   		write(*,*) ' '
-!    		write(*,*) ' ra ',equmINITSS%ra,ra
-!    		write(*,*) ' rb ',equmINITSS%rb,rb
-!    		write(*,*) ' wage ',equmINITSS%wage,wage
-!    		write(*,*) ' netwage ',equmINITSS%netwage,netwage
-!    		write(*,*) ' equity',equmINITSS%equity,equmTRANS(1)%equity
-!    		write(*,*) ' profit',equmINITSS%profit,equmTRANS(1)%profit
-!    		write(*,*) ' mc',equmINITSS%mc,equmTRANS(1)%mc
-!    		write(*,*) ' pi',equmINITSS%pi,equmTRANS(1)%pi
-!    		write(*,*) ' bond',equmINITSS%bond,equmTRANS(1:3)%bond
-!    		write(*,*) ' lump',equmINITSS%lumptransfer,equmTRANS(1:2)%lumptransfer
-!   		write(*,*) ' '
-! 	END IF
 	
+    IF(it==1) THEN
+  		write(*,*) ' '
+   		write(*,*) ' ra ',equmINITSS%ra,ra
+   		write(*,*) ' rb ',equmINITSS%rb,rb
+   		write(*,*) ' equity',equmINITSS%equity_A,equmTRANS(1)%equity_A
+   		write(*,*) ' profit',equmINITSS%profit,equmTRANS(1)%profit
+   		write(*,*) ' wage_Y',equmINITSS%wage_Y,equmTRANS(1)%wage_Y
+   		write(*,*) ' wage_Y',equmINITSS%wage_N,equmTRANS(1)%wage_N
+   		write(*,*) ' pi',equmINITSS%pi,equmTRANS(1)%pi
+   		write(*,*) ' bond',equmINITSS%bond,equmTRANS(1:3)%bond
+   		write(*,*) ' lump',equmINITSS%lumptransfer,equmTRANS(1:2)%lumptransfer
+  		write(*,*) ' '
+	END IF
+
 	!set drifts
 	ltau = 15.0
 	ltau0 = (ra+PerfectAnnuityMarkets*deathrate)*(agrid(ngpa)*0.999)**(1.0-ltau)
@@ -89,50 +87,31 @@ DO it = Ttransition,1,-1
 	bdrift = MERGE((rb-finwedge+PerfectAnnuityMarkets*deathrate)*bgrid,(rborr+PerfectAnnuityMarkets*deathrate)*bgrid,bgrid>0.0)
 	
 	
-	lbgrid(:,it) = bgrid
 	IF (Borrowing==1 .and. rborr+PerfectAnnuityMarkets*deathrate>0.0 .and. bgrid(1) < -lumptransfer/(rborr+PerfectAnnuityMarkets*deathrate)) THEN
-		IF(Display>=1) write(*,*) '  Warning: natural borrowing limit violated in transition'
-		IF(Display>=1) write(*,*) '  Steady State ABL: ',abl, 'Current NBL: ',-lumptransfer/(rborr+PerfectAnnuityMarkets*deathrate)
 		IF(Display>=1) THEN
-			write(*,*) ' t ',it
-			write(*,*) ' prodispshock ',prodispshock
-			write(*,*) ' ProdDispScaleDisutilty ',ProdDispScaleDisutilty
-			write(*,*) '  '
-			write(*,*) ' ygrid ',ygrid
-			write(*,*) '  '
-			write(*,*) ' equmINITSS%ygrid ',equmINITSS%ygrid
-
-			write(*,*) '  '
-			write(*,*) ' pi ',equmTRANS(it)%pi
-			write(*,*) ' rborr ',rborr
-			write(*,*) ' rb ',rb
-			write(*,*) ' wage ',wage
-			write(*,*) ' Ehours,Elabor,Ewage ',statsTRANS(it)%Ehours,statsTRANS(it)%Elabor,statsTRANS(it)%Ewage
-			write(*,*) ' mc ',equmTRANS(it)%mc
-			write(*,*) ' capital ',equmTRANS(it)%capital
-			write(*,*) ' labor ',equmTRANS(it)%labor
-			write(*,*) ' labor SS',equmINITSS%labor
-			write(*,*) ' KYratio ',equmTRANS(it)%KYratio
-			write(*,*) ' mpshock ',equmTRANS(it)%mpshock
-			write(*,*) ' lumptransfer ',equmTRANS(it)%lumptransfer
+			write(*,*) '  Warning: natural borrowing limit violated in transition'
+			write(*,*) '  Steady State ABL: ',abl, 'Current NBL: ',-lumptransfer/(rborr+PerfectAnnuityMarkets*deathrate)
+			write(*,*) rborr, lumptransfer, bgrid(1)
+	  		write(*,*) ' it: ',it
+	   		write(*,*) ' ra ',equmINITSS%ra,ra
+	   		write(*,*) ' rb ',equmINITSS%rb,rb
+	   		write(*,*) ' equity',equmINITSS%equity_A,equmTRANS(it)%equity_A
+	   		write(*,*) ' profit',equmINITSS%profit,equmTRANS(it)%profit
+	   		write(*,*) ' wage_Y',equmINITSS%wage_Y,wage_Y
+	   		write(*,*) ' wage_Y',equmINITSS%wage_N,wage_N
+	   		write(*,*) ' pi',equmINITSS%pi,equmTRANS(it)%pi
+	   		write(*,*) ' bond',equmINITSS%bond,equmTRANS(1:3)%bond
+	   		write(*,*) ' lump',equmINITSS%lumptransfer,lumptransfer
+	  		write(*,*) ' '
+			
 		END IF
 		nblviolated = .true.
-		RETURN
-		lbmin = -lumptransfer/(rborr+PerfectAnnuityMarkets*deathrate) + cmin
-		
-		
-		CALL PowerSpacedGrid (ngpbNEG/2+1,bgridparamNEG,lbmin,(lbmin+lbgrid(ngpbNEG+1,it))/2.0,lbgrid(1:ngpbNEG/2+1,it))
-		DO ib = ngpbNEG/2+2,ngpbNEG
-			lbgrid(ib,it) = lbgrid(ngpbNEG+1,it) -(lbgrid(ngpbNEG+2-ib,it)-lbgrid(1,it))
-		END DO
-		
-		bdrift = MERGE((rb-finwedge+PerfectAnnuityMarkets*deathrate)*lbgrid(:,it),(rborr+PerfectAnnuityMarkets*deathrate)*lbgrid(:,it),lbgrid(:,it)>0.0)
-		
+		STOP
 	END IF
 
 	delta = deltatransvec(it)
 	CALL HJBUpdate
-! 	
+ 	
 ! 	!store value functions and A matrix
 	solnTRANS(it)%V = Vnew
 	solnTRANS(it)%u = u 
@@ -197,13 +176,22 @@ DO it = 1,Ttransition
 	END DO
 	!$OMP END PARALLEL DO
 	
-	IF(it==1 .and. (DividendFundLumpSum==0 .or. OneAssetNoCapital==1)) lgmat = solnINITSS%gmat
-	IF(it==1 .and. DividendFundLumpSum==1 .and. OneAssetNoCapital==0) THEN
+	!adjust for asset price drops on impact
+	IF(it==1 .and. OneAssetNoCapital==1) lgmat = solnINITSS%gmat
+	IF(it==1 .and. OneAssetNoCapital==0) THEN
 		
 		!$OMP PARALLEL DO PRIVATE(ib)
 		DO iy = 1,ngpy
 			DO ib = 1,ngpb
-				CALL AdjustDistProportionately(agrid,adelta,solnINITSS%gjoint(:,ib,iy),equmTRANS(1)%illassetdrop,lgjoint(:,ib,iy))
+				CALL AdjustDistProportionately(agrid,adelta,solnINITSS%gjoint(:,ib,iy),equmTRANS(1)%assetdrop_A,lgjoint(:,ib,iy))
+			END DO
+		END DO
+		!$OMP END PARALLEL DO
+
+		!$OMP PARALLEL DO PRIVATE(ia)
+		DO iy = 1,ngpy
+			DO ia = 1,ngpa
+				CALL AdjustDistProportionately(bgrid,bdelta,solnINITSS%gjoint(ia,:,iy),equmTRANS(1)%assetdrop_B,lgjoint(ia,:,iy))
 			END DO
 		END DO
 		!$OMP END PARALLEL DO
@@ -261,13 +249,13 @@ DO it = 1,Ttransition
 	END DO
 	!$OMP END PARALLEL DO
 	
-	!set globals: apply current period policy function to last period distribution of state variables
-	IF(it==1 .and. (DividendFundLumpSum==0 .or. OneAssetNoCapital==1))  THEN
+	!set globals for distribution statistics: apply current period policy function to last period distribution of state variables
+	IF(it==1 .and. OneAssetNoCapital==1)  THEN
 		gvec = solnINITSS%gvec
 		gmat = solnINITSS%gmat
 		gamarg = solnINITSS%gamarg
 		gbmarg = solnINITSS%gbmarg
- 	ELSE 	IF(it==1 .and. DividendFundLumpSum==1 .and. OneAssetNoCapital==0) THEN
+ 	ELSEIF(it==1 .and. OneAssetNoCapital==0) THEN
 		gmat = lgmat
 		gjoint = lgjoint
 		
@@ -300,9 +288,10 @@ DO it = 1,Ttransition
 		gbmarg = solnTRANS(it-1)%gbmarg
 	END IF	
 		
-	wage = equmTRANS(it)%wage
-	netwage = equmTRANS(it)%netwage
+	wage_Y = equmTRANS(it)%wage_Y
+	wage_N = equmTRANS(it)%wage_N
 	lumptransfer = equmTRANS(it)%lumptransfer	
+	labtax = equmTRANS(it)%labtax
 	kappa0_w = equmTRANS(it)%kappa0_w	
 	IF (SymmetricAdjustmentCost) kappa0_d = kappa0_w
 	kappa1_w = equmTRANS(it)%kappa1_w	
@@ -313,20 +302,18 @@ DO it = 1,Ttransition
 	rborr = equmTRANS(it)%rborr
 	finwedge = equmTRANS(it)%finwedge
 	profit = equmTRANS(it)%profit
-	ygrid = equmTRANS(it)%ygrid
+	yprodgrid = equmTRANS(it)%yprodgrid
 	
 	c = solnTRANS(it)%c
 	h = solnTRANS(it)%h 
 	d = solnTRANS(it)%d
 
-	IF(it>1) bgrid = lbgrid(:,it-1)
-	!PROBLEM HERE SINCE bdelta IS USED IN DISTRIBUTION STATISTICS
 
 	CALL DistributionStatistics
-	bgrid = holdbgrid
-	statsTRANS(it) = DistributionStatsType(Ea,Eb,Ec,Elabor,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Enw,FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
-										EbN,EbP,Eadjcost,PERCa,PERCb,PERCnw,PERCc,PERCinc,GINIa,GINIb,GINInw,GINIc,GINIinc, &
-										Ea_nwQ,Eb_nwQ,Ec_nwQ,Einc_nwQ,Ea_incQ,Eb_incQ,Ec_incQ,Einc_incQ,Ec_bN,Ec_b0close,Ec_b0far,Ec_nwQ_add)
+	statsTRANS(it) = DistributionStatsType(Ea,Eb,Ec,Elabor,Elabor_N,Elabor_Y,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Ehours_N,Ehours_Y,Enw, &
+									FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
+ 									EbN,EbP,Eadjcost,PERCa,PERCb,PERCnw,PERCc,PERCinc,GINIa,GINIb,GINInw,GINIc,GINIinc, &
+ 									Ea_nwQ,Eb_nwQ,Ec_nwQ,Einc_nwQ,Ea_incQ,Eb_incQ,Ec_incQ,Einc_incQ,Ec_bN,Ec_b0close,Ec_b0far,Ec_nwQ_add)
 
 END DO
 
