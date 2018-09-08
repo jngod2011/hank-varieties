@@ -39,13 +39,13 @@ DO it = Ttransition,1,-1
 	!set drifts and globals
 	rho = equmTRANS(it)%rho
 	ra = equmTRANS(it)%ra
+	rb = equmTRANS(it)%rb
 	rborr = equmTRANS(it)%rborr
 	borrwedge = equmTRANS(it)%borrwedge
 	wage_Y = equmTRANS(it)%wage_Y
 	wage_N = equmTRANS(it)%wage_N
 	labtax = equmTRANS(it)%labtax
 	lumptransfer = equmTRANS(it)%lumptransfer
-	rb = equmTRANS(it)%rb
 	tfp_Y = equmTRANS(it)%tfp_Y
 	tfp_N = equmTRANS(it)%tfp_N
 	kappa0_w = equmTRANS(it)%kappa0_w	
@@ -73,7 +73,7 @@ DO it = Ttransition,1,-1
    		write(*,*) ' equity',equmINITSS%equity_A,equmTRANS(1)%equity_A
    		write(*,*) ' profit',equmINITSS%profit,equmTRANS(1)%profit
    		write(*,*) ' wage_Y',equmINITSS%wage_Y,equmTRANS(1)%wage_Y
-   		write(*,*) ' wage_Y',equmINITSS%wage_N,equmTRANS(1)%wage_N
+   		write(*,*) ' wage_N',equmINITSS%wage_N,equmTRANS(1)%wage_N
    		write(*,*) ' pi',equmINITSS%pi,equmTRANS(1)%pi
    		write(*,*) ' bond',equmINITSS%bond,equmTRANS(1:3)%bond
    		write(*,*) ' lump',equmINITSS%lumptransfer,equmTRANS(1:2)%lumptransfer

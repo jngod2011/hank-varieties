@@ -1,9 +1,9 @@
 FC = ifort
-# FCFLAGS = -m64 -g -debug all -implicitnone -Wl,-stack_size,0x100000000 -save-temps -warn all -fp-stack-check -ftrapuv -traceback -L/Volumes/FILES/Projects/Fortran/SuiteSparse/lib -lumfpack -lamd -lcholmod -lcolamd -lsuitesparseconfig -lblas -check all
-# LDFLAFS = -m64 -g -Wl -debug all,-stack_size,0x100000000  -L/Volumes/FILES/Projects/Fortran/SuiteSparse/lib -lumfpack -lamd -lcholmod -lcolamd -lsuitesparseconfig -lblas -check all
+ FCFLAGS = -m64 -g -debug all -implicitnone -Wl,-stack_size,0x100000000 -save-temps -warn all -fp-stack-check -ftrapuv -traceback -L/Volumes/FILES/Projects/Fortran/SuiteSparse/lib -lumfpack -lamd -lcholmod -lcolamd -lsuitesparseconfig -lblas -check all
+ LDFLAFS = -m64 -g -Wl -debug all,-stack_size,0x100000000  -L/Volumes/FILES/Projects/Fortran/SuiteSparse/lib -lumfpack -lamd -lcholmod -lcolamd -lsuitesparseconfig -lblas -check all
 
-FCFLAGS = -m64 -traceback -O3 -qopenmp -implicitnone  -Wl,-stack_size,0x100000000 -L/Volumes/FILES/Projects/Fortran/SuiteSparse/lib -lumfpack -lamd -lcholmod -lcolamd -lsuitesparseconfig -lblas
-LDFLAFS = -m64 -traceback -O3 -qopenmp -implicitnone  -Wl,-stack_size,0x100000000 -L/Volumes/FILES/Projects/Fortran/SuiteSparse/lib -lumfpack -lamd -lcholmod -lcolamd -lsuitesparseconfig -lblas
+#FCFLAGS = -m64 -traceback -O3 -qopenmp -implicitnone  -Wl,-stack_size,0x100000000 -L/Volumes/FILES/Projects/Fortran/SuiteSparse/lib -lumfpack -lamd -lcholmod -lcolamd -lsuitesparseconfig -lblas
+#LDFLAFS = -m64 -traceback -O3 -qopenmp -implicitnone  -Wl,-stack_size,0x100000000 -L/Volumes/FILES/Projects/Fortran/SuiteSparse/lib -lumfpack -lamd -lcholmod -lcolamd -lsuitesparseconfig -lblas
 
 #-check noarg_temp_created -check arg_temp_created -gen-interfaces -warn interfaces
 

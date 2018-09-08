@@ -53,15 +53,17 @@ ELSE IF(PermanentShock==1) THEN
 
 	CALL DistributionStatistics
 
-equmINITSS = EquilibriumType(	ra,rborr,rcapital,rb,pi,rnom,gap,bond,investment,govexp,taxrev,govbond,worldbond,profit,priceadjust,totoutput,varieties,output,&
+	equmFINALSS = EquilibriumType(	ra,rborr,rcapital,rb,pi,rnom,gap,bond,investment,govexp,taxrev,govbond,worldbond,profit,priceadjust,totoutput,varieties,output,&
 					capital,K_totoutput_ratio,equity_A,equity_B,dividend_A,dividend_B,capital_Y,labor_Y,wage_Y,mc_Y,tfp_Y,capital_N,labor_N,wage_N,mc_N,tfp_N,price_W, &
 					grossprofit_W,netprofit_W,grossprofit_R,netprofit_R,labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,assetdrop_A,assetdrop_B,caputil,&
 					govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale,yprodgrid,&
 					borrwedge,rho,kappa0_w,kappa1_w,mpshock,prefshock,gam,elast)
 
-! 	statsFINALSS = DistributionStatsType(Ea,Eb,Ec,Elabor,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Enw,FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
-! 										EbN,EbP,Eadjcost,PERCa,PERCb,PERCnw,PERCc,PERCinc,GINIa,GINIb,GINInw,GINIc,GINIinc, &
-! 										Ea_nwQ,Eb_nwQ,Ec_nwQ,Einc_nwQ,Ea_incQ,Eb_incQ,Ec_incQ,Einc_incQ,Ec_bN,Ec_b0close,Ec_b0far,Ec_nwQ_add)
+	statsFINALSS = DistributionStatsType(Ea,Eb,Ec,Elabor,Elabor_N,Elabor_Y,Ed,Ewage,Enetlabinc,Egrosslabinc,Enetprofinc,Egrossprofinc,Einc,Ehours,Ehours_N,Ehours_Y,Enw, &
+					FRACa0,FRACa0close,FRACb0,FRACb0close,FRACb0a0,FRACb0aP,FRACbN,FRACnw0,FRACnw0close,FRACb0a0close, &
+					EbN,EbP,Eadjcost,PERCa,PERCb,PERCnw,PERCc,PERCinc,GINIa,GINIb,GINInw,GINIc,GINIinc, &
+					Ea_nwQ,Eb_nwQ,Ec_nwQ,Einc_nwQ,Ea_incQ,Eb_incQ,Ec_incQ,Einc_incQ,Ec_bN,Ec_b0close,Ec_b0far,Ec_nwQ_add)
+
 
 END IF
 

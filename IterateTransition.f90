@@ -405,6 +405,7 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB,ldiffL)>toltransition .
 	END IF
 	ldiffL= max(maxval(abs(llabor_Y/equmTRANS(:)%labor_Y - 1.0)),maxval(abs(llabor_N/equmTRANS(:)%labor_N - 1.0)) )
 
+	
 	IF (Display>=1) THEN
 		write(*,"(A,I,A)") '  Transition iter ',ii, ':'
 		write(*,"(A,E10.3,A,E10.3,A,E10.3)") '   K err',ldiffK, ',  B err',ldiffB, ',  L err',ldiffL
@@ -414,6 +415,44 @@ DO WHILE (ii<=maxitertranssticky .and. max(ldiffK,ldiffB,ldiffL)>toltransition .
 		write(*,"(A,E14.7,A,E14.7)") '   labor_Y, t=1',llabor_Y(1), ',  target',equmTRANS(1)%labor_Y
 		write(*,"(A,E14.7,A,E14.7)") '   labor_N, t=1',llabor_N(1), ',  target',equmTRANS(1)%labor_N
 	END IF
+
+	write(*,*) 'lcapital',lcapital
+	write(*,*) 'equmTRANS(:)%capital', equmTRANS(:)%capital
+	write(*,*) 'lbond',lbond
+	write(*,*) 'equmTRANS(:)%bond', equmTRANS(:)%bond
+	
+	!CHECK
+	
+	write(*,*) '**************************'
+	write(*,*) ' ra ',equmINITSS%ra,equmTRANS(:)%ra
+	write(*,*) ' rb ',equmINITSS%rb,equmTRANS(:)%rb
+	write(*,*) ' price_W',equmINITSS%price_W,equmTRANS(:)%price_W
+	write(*,*) ' dividend_A',equmINITSS%dividend_A,equmTRANS(:)%dividend_A
+	write(*,*) ' equity_A',equmINITSS%equity_A,equmTRANS(:)%equity_A
+	write(*,*) ' profit',equmINITSS%profit,equmTRANS(:)%profit
+	write(*,*) ' netprofit_R',equmINITSS%netprofit_R,equmTRANS(:)%netprofit_R
+	write(*,*) ' netprofit_W',equmINITSS%netprofit_W,equmTRANS(:)%netprofit_W
+	write(*,*) ' wage_Y',equmINITSS%wage_Y,equmTRANS(:)%wage_Y
+	write(*,*) ' wage_N',equmINITSS%wage_N,equmTRANS(:)%wage_N
+	write(*,*) ' pi',equmINITSS%pi,equmTRANS(:)%pi
+	write(*,*) ' bond',equmINITSS%bond,equmTRANS(:)%bond
+	write(*,*) ' capital',equmINITSS%capital,equmTRANS(:)%capital
+	write(*,*) ' capital_N',equmINITSS%capital_N,equmTRANS(:)%capital_N
+	write(*,*) ' capital_Y',equmINITSS%capital_N,equmTRANS(:)%capital_Y
+	write(*,*) ' output',equmINITSS%output,equmTRANS(:)%output
+	write(*,*) ' lump',equmINITSS%lumptransfer,equmTRANS(:)%lumptransfer
+	write(*,*) ' labor_Y',equmINITSS%labor_Y,equmTRANS(:)%labor_Y
+	write(*,*) ' rcapital',equmINITSS%rcapital,equmTRANS(:)%rcapital
+	write(*,*) ' hour',equmINITSS%capital_N,equmTRANS(:)%capital_N
+	write(*,*) ' labor_Y',equmINITSS%labor_Y,llabor_Y
+	write(*,*) ' labor_N',equmINITSS%labor_Y,llabor_N
+	write(*,*) ' assetdrop_A',equmTRANS(:)%assetdrop_A
+	write(*,*) ' assetdrop_B',equmTRANS(:)%assetdrop_B
+	
+	write(*,*) ' '
+	write(*,*) '**************************'
+	write(*,*) ' '
+STOP
 
 	!updates
 	IF (ii<maxitertranssticky .and. max(ldiffK,ldiffB,ldiffL)>toltransition ) THEN

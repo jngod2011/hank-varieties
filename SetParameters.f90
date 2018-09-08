@@ -279,7 +279,7 @@ bondprefweight 	= 0.01
 
 !liquid assets
 rb			 = 0.02/4.0 !liquid return
-borrwedge 	 = 0.015 !0.0148846 !0.019663 ! !quarterly wedge between rb and rborr: intermediation cost  
+borrwedge 	 = 0.025 !0.0148846 !0.019663 ! !quarterly wedge between rb and rborr: intermediation cost  
 rborr = rb + borrwedge
 borrwedgemax = 0.09
 blim 		 = -1.0 	!borrowing limit multiple of quarterly output

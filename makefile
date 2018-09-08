@@ -9,7 +9,7 @@ debug:
 
 sstest:
 	make -f sstest.makefile
-	# dsymutil $(OUT).out
+	dsymutil $(OUT).out
 
 hpcrelease:
 	make -f hpcrelease.makefile
