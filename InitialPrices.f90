@@ -5,7 +5,6 @@ USE Globals
 USE Procedures
 
 IMPLICIT NONE
-REAL(8)		:: lhourtarget
 
 !normalize steady state Y=N=P=P_R=1
 output = 1.0
@@ -22,18 +21,13 @@ profit = netprofit_R + netprofit_W
 
 !compute steady-state target capital-output ratio
 CALL KNYfromANY(targetMeanIll,target_K_totoutput_ratio,price_W)
+K_totoutput_ratio = target_K_totoutput_ratio
 
-!guess labor disutility so that at average wages and average consumption hours =1/3 (sets C/Y = 0.75) for hand-to-mouth. true hours will be lower
-lhourtarget = 1.0/3.0
-IF (NoLaborSupply==1)	chi	= 0.0 
-IF (LaborSupplySep==1)	chi	= meanlabeff / (0.75 **(-gam) * lhourtarget**(1.0/frisch))
-IF (LaborSupplyGHH==1)	chi = meanlabeff / (lhourtarget**(1.0/frisch)) 
 
 !if solving for equilibrium, these are guesses
-labor_Y = lhourtarget*meanlabeff*DOT_PRODUCT(1.0-occgrid,occdist)/varieties
-labor_N = lhourtarget*meanlabeff*DOT_PRODUCT(occgrid,occdist)
+labor_Y = hourtarget*meanlabeff*DOT_PRODUCT(1.0-occgrid,occdist)/varieties
+labor_N = hourtarget*meanlabeff*DOT_PRODUCT(occgrid,occdist)
 
-K_totoutput_ratio = target_K_totoutput_ratio
 capital = totoutput * K_totoutput_ratio
 rcapital = (price_W*alpha_Y*drs_Y + (1.0-price_W)*alpha_N*drs_N)/K_totoutput_ratio
 

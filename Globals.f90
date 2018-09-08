@@ -71,7 +71,7 @@ real(8), dimension(:), allocatable			:: gvec
 real(8) :: delta
 
 !PARAMETER GLOBALS
-real(8)     :: rho,gam,utilcost,chi,frisch,blim,nbl,abl,prefshock,deathrate,meanlabeff
+real(8)     :: rho,gam,utilcost,chi,frisch,blim,nbl,abl,prefshock,deathrate,meanlabeff,hourtarget
 real(8)     :: profdistfracA,profdistfracB,profdistfracW,profdistfracL
 real(8)     :: elast,alpha_Y,alpha_N,drs_Y,drs_N,deprec,priceadjcost,phitaylor,phifg,bondelast,borrwedge,mpshock,bondadjust,bondelastrelgdp,taylorpers
 real(8) 	:: kappa0_d,kappa1_d,kappa2_d,kappafc_d,kappa0_w,kappa1_w,kappa2_w,kappafc_w,kappa3,kappa4_d,kappa4_w

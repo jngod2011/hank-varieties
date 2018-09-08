@@ -66,19 +66,19 @@ DO it = Ttransition,1,-1
 	
 	
 	
-    IF(it==1) THEN
-  		write(*,*) ' '
-   		write(*,*) ' ra ',equmINITSS%ra,ra
-   		write(*,*) ' rb ',equmINITSS%rb,rb
-   		write(*,*) ' equity',equmINITSS%equity_A,equmTRANS(1)%equity_A
-   		write(*,*) ' profit',equmINITSS%profit,equmTRANS(1)%profit
-   		write(*,*) ' wage_Y',equmINITSS%wage_Y,equmTRANS(1)%wage_Y
-   		write(*,*) ' wage_N',equmINITSS%wage_N,equmTRANS(1)%wage_N
-   		write(*,*) ' pi',equmINITSS%pi,equmTRANS(1)%pi
-   		write(*,*) ' bond',equmINITSS%bond,equmTRANS(1:3)%bond
-   		write(*,*) ' lump',equmINITSS%lumptransfer,equmTRANS(1:2)%lumptransfer
-  		write(*,*) ' '
-	END IF
+!     IF(it==1) THEN
+!   		write(*,*) ' '
+!    		write(*,*) ' ra ',equmINITSS%ra,ra
+!    		write(*,*) ' rb ',equmINITSS%rb,rb
+!    		write(*,*) ' equity',equmINITSS%equity_A,equmTRANS(1)%equity_A
+!    		write(*,*) ' profit',equmINITSS%profit,equmTRANS(1)%profit
+!    		write(*,*) ' wage_Y',equmINITSS%wage_Y,equmTRANS(1)%wage_Y
+!    		write(*,*) ' wage_N',equmINITSS%wage_N,equmTRANS(1)%wage_N
+!    		write(*,*) ' pi',equmINITSS%pi,equmTRANS(1)%pi
+!    		write(*,*) ' bond',equmINITSS%bond,equmTRANS(1:3)%bond
+!    		write(*,*) ' lump',equmINITSS%lumptransfer,equmTRANS(1:2)%lumptransfer
+!   		write(*,*) ' '
+! 	END IF
 
 	!set drifts
 	ltau = 15.0

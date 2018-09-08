@@ -15,24 +15,19 @@ converged = .false.
 neqmiter = 1
 ldiff = 1.0
 lstep 	= stepequmss
-lstep_lab = 0.25
+lstep_lab = 0.5
 
-IF(initialSS == .true. .and. CalibrateDiscountRate==0) CALL Grids
-IF(initialSS == .true. .and. CalibrateDiscountRate==0) CALL InitialPrices
+IF(initialSS == .true. .and. CalibrateDiscountRate==0) THEN !initialize grids and prices at target
+	 CALL Grids
+	 CALL InitialPrices
+END IF
+
 
 IF(OneAssetNoCapital==0) THEN
 	DO WHILE (neqmiter<=maxiterequmss .and. ldiff>tolequmss )
 
-! 		IF (Display>=2) THEN
-! 			WRITE(*,*) '*******************************************'
-! 			WRITE(*,*) ' ITERATION : 			',neqmiter
-! 			WRITE(*,*) ' r guess: 			',rcapital
-! 			WRITE(*,*) '  implied ra: 		',ra
-! 			WRITE(*,*) '  implied borr rate: ',rborr
-! 			WRITE(*,*) '  implied wage: ',wage
-! 			WRITE(*,*) '  implied KY ratio: ',KYratio
-! 			WRITE(*,*) '  implied KN firm: 	',KNratio
-! 		END IF
+
+
 
 		CALL IterateBellman
 		CALL StationaryDistribution
@@ -48,7 +43,7 @@ IF(OneAssetNoCapital==0) THEN
 		!check convergence
 		ldiff = abs(lK_totoutput_ratio/K_totoutput_ratio - 1.0) + abs(llabor_Y/labor_Y - 1.0) + abs(llabor_N/labor_N - 1.0)
 		IF (Display>=1) THEN
-			write(*,*) 'Steady state iter ',neqmiter
+			write(*,"(9999(G20.6,:,','))") 'Steady state iter ',neqmiter
 			write(*,"(9999(G14.6,:,','))") ' K-NY ratio:',K_totoutput_ratio,', labor_Y:',labor_Y,', labor_N:',labor_N
 			write(*,"(9999(G14.6,:,','))") ' K-NY ratio:',lK_totoutput_ratio,', labor_Y:',llabor_Y,', labor_N:',llabor_N
 			write(*,*) ' Err: ',ldiff
@@ -81,7 +76,6 @@ IF(OneAssetNoCapital==0) THEN
 		equity_B = dividend_B/rb
 
 		netwagegrid = (1.0-labtax) * yprodgrid * ( wage_N*yoccgrid + wage_Y*(1.0-yoccgrid) )
-
 		neqmiter = neqmiter+1 
 
 	END DO

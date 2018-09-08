@@ -11,7 +11,7 @@ INTEGER 	:: iy
 !OUTPUT DIR
 OutputDir =			"/Volumes/FILES/Large/HANKVarieties/test/"
 ! OutputDir ="Output/"
-EarningsProcessDir	= "/Volumes/FILES/Git/hank-main/earnings_input/2point_3_11"
+EarningsProcessDir	= "/Volumes/FILES/Git/hank-varieties/earnings_input/2point_3_11"
 ! EarningsProcessDir	= "/home/gkaplan/git/hank-main/earnings_input/2point_3_11"
 
 !INPUT / OUTPUT DIR FOR FED IN PRICES
@@ -32,7 +32,7 @@ ReportNonMonotonicity   	= 0
 CalibrateDiscountRate	= 1
 EquilibriumR		 	= 1
 ComputeCumulativeMPC 	= 0
-DoImpulseResponses 		= 1
+DoImpulseResponses 		= 0
 DoFeedInPrices 			= 0
 SaveTransitionPolicyFns = 0	!warning: will create a very large number of text files 
 SaveTime1PolicyFns 		= 0
@@ -40,7 +40,7 @@ SaveCumPolicyFnsIRF 	= 0
 ComputeDiscountedMPC 	= 0
  
 !labor risk options
-ReadEarningsProcess = 0
+ReadEarningsProcess = 1
 NoLaborSupply		= 0	!only one of the labor supply options
 LaborSupplySep		= 1	
 LaborSupplyGHH 		= 0
@@ -241,13 +241,13 @@ deltakfe 		= 1.0e6 !1.0 !1.0e4
 dVamin 			= 1.0e-8 !0.0
 dVbmin 			= 1.0e-8
 
-tolequmss		= 1.0e-6
+tolequmss		= 1.0e-7
 stepequmss		= 0.05
 maxiterequmss	= 40 !20
 maxiterrho 		= 50 !30 !50
-tolrho			= 1.0e-5 !1.0e-8
+tolrho			= 1.0e-6 !1.0e-8
 
-toltransition	= 1.0e-7
+toltransition	= 1.0e-5
 TransitionTimeStepType = 2
 deltatransmin	= 1.0/3.0 !1.0 !use with TransitionTimeStepType==1
 deltatransmax	= 40.0 !use with TransitionTimeStepType==1
@@ -265,7 +265,7 @@ stepstickytransL  = 0.2
 deltacumcon = 0.01 !deltatransmin !set to a low number like 0.01 for accurate steady state MPCs, and to deltratransmin for IRF consistency
 
 !discount rates
-rho		=  0.0125
+rho		=  0.01781 !0.0125
 
 !preferences
 deathrate	= 1.0/(4.0*45.0) !poisson death rate
@@ -338,6 +338,12 @@ gap 	= 0.0 !steady state output gap
 
 meanlabeff = 1.0
 frisch 		= 1.0 	!frisch elasticity labor supply
+
+!guess labor disutility so that at average wages and average consumption hours =1/3 (sets C/Y = 0.75) for hand-to-mouth. true hours will be lower
+hourtarget = 1.0/3.0
+IF (NoLaborSupply==1)	chi	= 0.0 
+IF (LaborSupplySep==1)	chi	= meanlabeff / (0.75 **(-gam) * hourtarget**(1.0/frisch))
+IF (LaborSupplyGHH==1)	chi = meanlabeff / (hourtarget**(1.0/frisch)) 
 
 !production parameters
 drs_Y 		= 0.6

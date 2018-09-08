@@ -25,6 +25,9 @@ ELSE IF(CalibrateDiscountRate==1) THEN
 	converged = .false.
 	neqmiter = 1
 	
+	CALL Grids
+	CALL InitialPrices
+	
 	OPEN(3, FILE = trim(OutputDir) // 'DiscountRateCalibration.txt', STATUS = 'replace'); CLOSE(3)
 	IF(ngpy==1 .and. deathrate==0.0) THEN !RA model no death
 		lrhoL = invlogistic(exp(-0.02_8))
