@@ -9,7 +9,7 @@ IMPLICIT NONE
 REAL(8), INTENT(IN) :: lrhoT
 REAL(8)				:: lstep_lab,llabor_Y,llabor_N
 
-lstep_lab = 1.0
+lstep_lab = 0.5
 
 rho = -log(logistic(lrhoT))
 
@@ -29,14 +29,14 @@ llabor_N = Elabor_N
 FnDiscountRate = K_totoutput_ratio/target_K_totoutput_ratio - 1.0
 
 IF (Display>=1) THEN
-	write(*,"(9999(G20.6,:,','))") 'Rho calibration, iter: ',neqmiter,' rho:',rho
-	write(*,"(9999(G14.6,:,','))") ' K-NY target :',target_K_totoutput_ratio,', labor_Y:',labor_Y,', labor_N:',labor_N
-	write(*,"(9999(G14.6,:,','))") ' K-NY current:',K_totoutput_ratio,', labor_Y:',llabor_Y,', labor_N:',llabor_N
+	write(*,"(9999(G20.6,:,','))") 'Rho calib iter: ',nrhoiter,' rho:',rho
+	write(*,"(9999(G14.6,:,','))") ' K-NY target :',target_K_totoutput_ratio,' labor_Y:',labor_Y,' labor_N:',labor_N
+	write(*,"(9999(G14.6,:,','))") ' K-NY current:',K_totoutput_ratio,' impl labor_Y:',llabor_Y,' impl labor_N:',llabor_N
 	write(*,*) ' Err: ',FnDiscountRate
 	write(*,*) ' '
 END IF
 
-IF (neqmiter<=3) THEN
+IF (nrhoiter<=2) THEN
 	labor_Y = hourtarget*meanlabeff*DOT_PRODUCT(1.0-occgrid,occdist)/varieties
 	labor_N = hourtarget*meanlabeff*DOT_PRODUCT(occgrid,occdist)
 ELSE
@@ -82,5 +82,5 @@ netwagegrid = (1.0-labtax) * yprodgrid * ( wage_N*yoccgrid + wage_Y*(1.0-yoccgri
 ! WRITE(3,*) '  relative error: ',FnDiscountRate
 ! CLOSE(3)
 
-neqmiter = neqmiter+1
+nrhoiter = nrhoiter+1
 END FUNCTION FnDiscountRate

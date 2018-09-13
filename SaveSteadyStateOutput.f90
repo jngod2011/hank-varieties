@@ -79,6 +79,8 @@ OPEN(3, FILE = trim(OutputDir) // 'InitialSteadyStateParameters.txt', STATUS = '
 	write(3,*) 'deprec ',deprec
 	write(3,*) 'alpha_Y ',alpha_Y
 	write(3,*) 'alpha_N ',alpha_N
+	write(3,*) 'alpha_Y ',drs_Y
+	write(3,*) 'alpha_N ',drs_N
 	
 	write(3,*) 'Ea ',statsINITSS%Ea
 	write(3,*) 'Eb ',statsINITSS%Eb

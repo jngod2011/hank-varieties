@@ -28,7 +28,6 @@ IF(OneAssetNoCapital==0) THEN
 
 
 
-
 		CALL IterateBellman
 		CALL StationaryDistribution
 		CALL DistributionStatistics
@@ -55,7 +54,7 @@ IF(OneAssetNoCapital==0) THEN
 		labor_Y = lstep_lab*llabor_Y + (1.0-lstep_lab)*labor_Y
 		labor_N = lstep_lab*llabor_N + (1.0-lstep_lab)*labor_N
 	
-		!implied prices and equm objects
+		!update other prices and equm objects
 		capital = totoutput * K_totoutput_ratio
 		rcapital = (price_W*alpha_Y*drs_Y + (grossprofit_R/output)*alpha_N*drs_N)/K_totoutput_ratio
 
@@ -76,6 +75,7 @@ IF(OneAssetNoCapital==0) THEN
 		equity_B = dividend_B/rb
 
 		netwagegrid = (1.0-labtax) * yprodgrid * ( wage_N*yoccgrid + wage_Y*(1.0-yoccgrid) )
+
 		neqmiter = neqmiter+1 
 
 	END DO

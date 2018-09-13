@@ -83,7 +83,7 @@ real(8)     :: ra,rborr,rcapital,rb,pi,rnom,gap,bond,investment,govexp,taxrev,go
 real(8)     :: totoutput,varieties,output,capital,K_totoutput_ratio,equity_A,equity_B,dividend_A,dividend_B
 real(8)     :: capital_Y,labor_Y,wage_Y,mc_Y,tfp_Y,capital_N,labor_N,wage_N,mc_N,tfp_N,price_W,grossprofit_W,netprofit_W,grossprofit_R,netprofit_R
 real(8)     :: labtax,lumptransfer,lumptransferpc,ssdebttogdp,corptax,assetdrop_A,assetdrop_B,caputil,govshock,transfershock,finwedge,labwedge,pricelev,prodgridscale,prodmarkovscale
-integer 	:: neqmiter
+integer 	:: neqmiter,nrhoiter
 logical		:: converged,initialSS
 
 !STATISTICS GLOBALS

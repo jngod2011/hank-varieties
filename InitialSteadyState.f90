@@ -23,7 +23,7 @@ ELSE IF(EquilibriumR==1 .and. CalibrateDiscountRate==0) THEN
 
 ELSE IF(CalibrateDiscountRate==1) THEN
 	converged = .false.
-	neqmiter = 1
+	nrhoiter = 1
 	
 	CALL Grids
 	CALL InitialPrices
@@ -33,7 +33,6 @@ ELSE IF(CalibrateDiscountRate==1) THEN
 		lrhoL = invlogistic(exp(-0.02_8))
 		lrhoU = invlogistic(exp(-0.01_8))
  		CALL rtbis(FnDiscountRate,lrhoL,lrhoU,1.0e-6_8,tolrho,rho)
-! 		CALL rtflsp(FnDiscountRate,lrhoL,lrhoU,1.0e-8_8,tolrho,iflag,maxiterrho)
 	ELSE
 ! 		lrhoL = invlogistic(exp(-0.02_8))
 ! 		lrhoU = invlogistic(exp(-0.01_8))

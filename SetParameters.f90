@@ -29,10 +29,10 @@ Display              		= 1
 ReportNonMonotonicity   	= 0
 
 !run options
-CalibrateDiscountRate	= 1
+CalibrateDiscountRate	= 0
 EquilibriumR		 	= 1
-ComputeCumulativeMPC 	= 0
-DoImpulseResponses 		= 0
+ComputeCumulativeMPC 	= 1
+DoImpulseResponses 		= 1
 DoFeedInPrices 			= 0
 SaveTransitionPolicyFns = 0	!warning: will create a very large number of text files 
 SaveTime1PolicyFns 		= 0
@@ -158,7 +158,7 @@ Kappa0ShockPers 		= exp(-0.5) !quarterly
 Kappa1ShockSize 		= 0.05 !percentage points
 Kappa1ShockPers 		= exp(-0.3) !quarterly
 
-MonetaryShockSize 		= 0.0 !0.005 !percentage points
+MonetaryShockSize 		= 0.0025 !0.005 !percentage points
 MonetaryShockPers 		= exp(-0.5) !0.5 !quarterly
 
 mpshockimpact 			= 0.005
@@ -245,7 +245,7 @@ tolequmss		= 1.0e-7
 stepequmss		= 0.05
 maxiterequmss	= 40 !20
 maxiterrho 		= 50 !30 !50
-tolrho			= 1.0e-6 !1.0e-8
+tolrho			= 1.0e-5 ! 1.0e-6 !1.0e-8
 
 toltransition	= 1.0e-5
 TransitionTimeStepType = 2
@@ -253,19 +253,19 @@ deltatransmin	= 1.0/3.0 !1.0 !use with TransitionTimeStepType==1
 deltatransmax	= 40.0 !use with TransitionTimeStepType==1
 deltatransparam	= 0.35 !use with TransitionTimeStepType==1
 deltatransnu 	= 0.05 !use with TransitionTimeStepType==2
-maxitertransflex	= 2000 !500 !200 !300
-maxitertranssticky	= 2000 !500 !200 !500
+maxitertransflex	= 500 !2000
+maxitertranssticky	= 500 !2000
 stepflextransK  = 0.05
 stepflextransB  = 0.001 !make smaller if update using B
 stepflextransL  = 0.2
 stepstickytransK  = 0.05 !0.01
 stepstickytransB  = 0.001 !0.001 !0.00005
-stepstickytransL  = 0.2
+stepstickytransL  = 0.05
 
 deltacumcon = 0.01 !deltatransmin !set to a low number like 0.01 for accurate steady state MPCs, and to deltratransmin for IRF consistency
 
 !discount rates
-rho		=  0.01781 !0.0125
+rho		=  0.01888 !0.0125
 
 !preferences
 deathrate	= 1.0/(4.0*45.0) !poisson death rate
@@ -339,11 +339,7 @@ gap 	= 0.0 !steady state output gap
 meanlabeff = 1.0
 frisch 		= 1.0 	!frisch elasticity labor supply
 
-!guess labor disutility so that at average wages and average consumption hours =1/3 (sets C/Y = 0.75) for hand-to-mouth. true hours will be lower
 hourtarget = 1.0/3.0
-IF (NoLaborSupply==1)	chi	= 0.0 
-IF (LaborSupplySep==1)	chi	= meanlabeff / (0.75 **(-gam) * hourtarget**(1.0/frisch))
-IF (LaborSupplyGHH==1)	chi = meanlabeff / (hourtarget**(1.0/frisch)) 
 
 !production parameters
 drs_Y 		= 0.6

@@ -5,6 +5,7 @@ USE Globals
 USE Procedures
 
 IMPLICIT NONE
+REAL(8)	:: lmeanwage
 
 !normalize steady state Y=N=P=P_R=1
 output = 1.0
@@ -49,6 +50,11 @@ equity_B = dividend_B/rb
 
 netwagegrid = (1.0-labtax) * yprodgrid * ( wage_N*yoccgrid + wage_Y*(1.0-yoccgrid) )
 
+!guess labor disutility so that at average wages and average consumption hours =1/3 (sets C/Y = 0.70) for hand-to-mouth. true hours will be lower
+lmeanwage = DOT_PRODUCT(1.0-occgrid,occdist)*wage_Y + DOT_PRODUCT(occgrid,occdist)*wage_N
+IF (NoLaborSupply==1)	chi	= 0.0 
+IF (LaborSupplySep==1)	chi	= lmeanwage*meanlabeff / (0.70 **(-gam) * hourtarget**(1.0/frisch))
+IF (LaborSupplyGHH==1)	chi = lmeanwage*meanlabeff / (hourtarget**(1.0/frisch)) 
 
 
 ! IF(OneAssetNoCapital==1) THEN
